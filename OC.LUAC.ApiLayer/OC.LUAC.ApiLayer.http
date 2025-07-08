@@ -1,0 +1,6 @@
+@OC.LUAC.ApiLayer_HostAddress = http://localhost:5194
+
+GET {{OC.LUAC.ApiLayer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
