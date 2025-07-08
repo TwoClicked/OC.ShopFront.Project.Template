@@ -1,10 +1,11 @@
-﻿using System;
+﻿using OC.LUAC.ObjectLayer.Orders;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OC.LUAC.ObjectLayer
+namespace OC.LUAC.ObjectLayer.Entities
 {
 
     // Represents the type of stock action performed on a product variant
@@ -29,7 +30,7 @@ namespace OC.LUAC.ObjectLayer
         public StockActionType ActionType { get; set; }
 
         // Quantity of stock affected by this action
-        public int Quantity { get; set; } 
+        public int Quantity { get; set; }
 
         public DateTime Timestamp { get; set; } = DateTime.Now; // Timestamp for when the action was performed
 

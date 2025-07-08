@@ -1,10 +1,11 @@
-﻿using System;
+﻿using OC.LUAC.ObjectLayer.Accounts;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OC.LUAC.ObjectLayer
+namespace OC.LUAC.ObjectLayer.Chat
 {
     public class ChatSession
     {

@@ -4,14 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OC.LUAC.ObjectLayer
+namespace OC.LUAC.ObjectLayer.DTO
 {
     public class CartItem
     {
-
-        // Primary key
-        public int id { get; set; }
-
         public string ProductName { get; set; } // Name of the product
 
         public int ProductVariantId { get; set; } // Foreign key to ProductVariant  

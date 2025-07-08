@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OC.LUAC.ObjectLayer
+namespace OC.LUAC.ObjectLayer.Entities
 {
     public class ProductImage
     {
