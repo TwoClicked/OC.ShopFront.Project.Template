@@ -8,7 +8,9 @@ using System.Threading.Tasks;
 namespace OC.LUAC.ObjectLayer.Entities
 {
 
-    // Represents the type of stock action performed on a product variant
+    /// <summary>
+    /// Enumeration for different types of stock actions that can be performed on a product variant.
+    /// </summary>
     public enum StockActionType
     {
         Add,
@@ -16,11 +18,14 @@ namespace OC.LUAC.ObjectLayer.Entities
         Sale,
         Cancel
     }
+    /// <summary>
+    /// Represents a stock action performed on a product variant in the e-commerce platform.
+    /// </summary>
     public class StockAction
     {
 
         // Primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         // Foreign key to ProductVariant
         public int ProductVariantId { get; set; }

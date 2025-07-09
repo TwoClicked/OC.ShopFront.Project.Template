@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Email
 {
+    /// <summary>
+    /// Represents the settings for sending emails, including SMTP server details and sender information.
+    /// </summary>
     public class EmaiLSettings
     {
 

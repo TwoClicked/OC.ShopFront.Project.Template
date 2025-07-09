@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Email
 {
+    /// <summary>
+    /// Represents an email message with properties for recipient, subject, body, and optional attachment.
+    /// </summary>
     public class EmailMessage
     {
 

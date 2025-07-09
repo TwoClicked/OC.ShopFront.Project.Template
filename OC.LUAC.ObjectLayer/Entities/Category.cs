@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Entities
 {
+    /// <summary>
+    /// Represents a product category with multi-language support, soft delete functionality, and navigation properties for related products.
+    /// </summary>
     public class Category
     {
 
-        public int id { get; set; }
+        public int Id { get; set; }
 
         //Multi-language support
         public string Name_en { get; set; }

@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Entities
 {
+    /// <summary>
+    /// Represents a product in the e-commerce system.
+    /// </summary>
     public class Product
     {
         //Primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         //Multi-language support
         public string Name_en { get; set; }

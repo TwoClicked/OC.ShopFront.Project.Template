@@ -7,11 +7,14 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Chat
 {
+    /// <summary>
+    /// Represents a chat session in the system.
+    /// </summary>
     public class ChatSession
     {
 
         //primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         //Foreign key to Customer
 

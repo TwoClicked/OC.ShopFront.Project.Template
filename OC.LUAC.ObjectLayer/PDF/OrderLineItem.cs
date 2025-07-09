@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.PDF
 {
+    /// <summary>
+    /// Represents a line item in an order, including product details such as name, size, quantity, and unit price.
+    /// </summary>
     public class OrderLineItem
     {
 

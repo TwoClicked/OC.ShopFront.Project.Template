@@ -7,12 +7,15 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Accounts
 {
+    /// <summary>
+    /// Represents a customer in the system.
+    /// </summary>
     public class Customer
     {
 
         // Primary key
 
-        public int id { get; set; }
+        public int Id { get; set; }
 
 
         public string Email { get; set; } // Email of the customer

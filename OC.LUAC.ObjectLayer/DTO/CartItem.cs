@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.DTO
 {
+    /// <summary>
+    /// Represents an item in the shopping cart. DtO for CartItem.
+    /// </summary> 
     public class CartItem
     {
         public string ProductName { get; set; } // Name of the product

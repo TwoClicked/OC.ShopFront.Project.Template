@@ -6,11 +6,14 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Accounts
 {
+    /// <summary>
+    /// Represents an address associated with a customer in the system.
+    /// </summary>
     public class Address
     {
 
         // primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         // Foreign key to Customer
         public int CustomerId { get; set; }

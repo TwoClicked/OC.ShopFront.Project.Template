@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OC.LUAC.ObjectLayer.Accounts;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,9 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Orders
 {
-
+    /// <summary>
+    /// Represents the status of an order. Enum for OrderStatus.
+    /// </summary>
     public enum OrderStatus
     {
         New,
@@ -14,18 +17,21 @@ namespace OC.LUAC.ObjectLayer.Orders
         Shipped,
         Cancelled
     }
-
+    /// <summary>
+    /// Represents an order in the system.
+    /// </summary>
     public class Order
     {
 
         // Primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         // OrderNumber is a unique identifier for the order
         public string OrderNumber { get; set; }
 
         // customer
         public int? CustomerId { get; set; } // It will be null if the user does not register/login and proceeds as Guest
+        public Customer? Customer { get; set; }
         public string Language { get; set; } // Language preference for the order (e.g., "en", "de")
 
         // Shipping details

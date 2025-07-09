@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Entities
 {
+    /// <summary>
+    /// Represents a product variant, which includes details such as size, stock quantity, and a reference to the parent product.
+    /// </summary>
     public class ProductVariant
     {
         // Primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         // Foreign key to Product
         public int ProductId { get; set; }

@@ -6,11 +6,14 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Accounts
 {
+    /// <summary>
+    /// Represents an admin user in the system.
+    /// </summary>
     public class AdminUser
     {
 
         // Primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         public string Email { get; set; } // Email of the admin user
         public string PasswordHash { get; set; } // Hashed password for security

@@ -6,11 +6,14 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Orders
 {
+    /// <summary>
+    /// Represents an item in an order. This class is used to store details of each product variant ordered, including its quantity and price at the time of the order.
+    /// </summary>
     public class OrderItem
     {
 
         //primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         //Foreign key to Order
         public int OrderId { get; set; }

@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Entities
 {
+    /// <summary>
+    /// Represents an image associated with a product in the e-commerce platform.
+    /// </summary>
     public class ProductImage
     {
         //Primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
         //Foreign key to Product
         public int ProductId { get; set; }

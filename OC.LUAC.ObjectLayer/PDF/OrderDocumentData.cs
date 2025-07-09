@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.PDF
 {
+    /// <summary>
+    /// Represents the data required to generate an order document, including order details, customer information, and line items.
+    /// </summary>
     public class OrderDocumentData
     {
 

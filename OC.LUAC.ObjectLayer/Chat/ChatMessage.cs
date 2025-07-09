@@ -6,13 +6,16 @@ using System.Threading.Tasks;
 
 namespace OC.LUAC.ObjectLayer.Chat
 {
+    /// <summary>
+    /// Represents a chat message in a chat session.
+    /// </summary>
     public class ChatMessage
     {
         // Primary key
-        public int id { get; set; }
+        public int Id { get; set; }
 
 
-        public int ChatSessionid { get; set; } // Foreign key to ChatSession
+        public int ChatSessionId { get; set; } // Foreign key to ChatSession
         public ChatSession ChatSession { get; set; } // Navigation property to ChatSession
 
         public bool IsFromCustomer { get; set; } // Indicates if the message is from the customer (true) or the support agent(Admin) (false)
