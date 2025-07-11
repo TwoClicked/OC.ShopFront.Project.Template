@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using OC.LUAC.DataLayer;
 using DiscordRPC;
 using Microsoft.Extensions.Configuration;
+using OC.LUAC.ServiceLayer.Services;
+using OC.LUAC.ServiceLayer.Interfaces;
 
 
 namespace OC.LUAC.ServiceLayer
@@ -22,7 +24,9 @@ namespace OC.LUAC.ServiceLayer
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
             // TODO: add services later 
-
+            
+            services.AddScoped<IProductService, ProductService>(); 
+            services.AddScoped<ICategoryService, CategoryService>();
 
             return services;
 
