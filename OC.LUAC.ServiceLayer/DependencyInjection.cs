@@ -23,10 +23,17 @@ namespace OC.LUAC.ServiceLayer
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-            // TODO: add services later 
-            
+            // Services registration
+
             services.AddScoped<IProductService, ProductService>(); 
             services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IProductVariantService, ProductVariantService>();
+            services.AddScoped<IStockActionService, StockActionService>();
+            services.AddScoped<IAdminUserService, AdminUserService>();
+            services.AddScoped<ICustomerService, CustomerService>();
+            services.AddScoped<IAddressService, AddressService>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IChatService, ChatService>();
 
             return services;
 
