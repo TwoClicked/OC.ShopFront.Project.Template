@@ -65,7 +65,5 @@ namespace OC.LUAC.ServiceLayer.Services
             user.LastLoginAt = DateTime.Now;
             _context.AdminUsers.Update(user);
         }
-
-
     }
 }

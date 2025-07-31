@@ -28,4 +28,9 @@
     <ProjectReference Include="..\OC.LUAC.ServiceLayer\OC.LUAC.ServiceLayer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+    <Folder Include="Models\" />
+  </ItemGroup>
+
 </Project>
