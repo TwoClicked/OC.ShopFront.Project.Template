@@ -1,6 +1,19 @@
-﻿namespace OC.LUAC.ApiLayer
+﻿using OC.LUAC.ApiLayer.Storage;
+
+namespace OC.LUAC.ApiLayer
 {
-    public class DependencyInjectionAPI
+    public static class DependencyInjectionAPI
     {
+
+        public static IServiceCollection AddApiLayerServices(this IServiceCollection services)
+        {
+
+            services.AddScoped<IImageStorage, LocalImageStorage>();
+
+
+            return services;
+
+        }
+
     }
 }

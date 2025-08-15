@@ -30,17 +30,48 @@ namespace OC.LUAC.ServiceLayer.Services
         {
             var variant = await _context.ProductVariants.FindAsync(variantId);
             if (variant == null || variant.IsDeleted)
+            {
                 throw new Exception("Product variant not found");
+            }
 
-            variant.Stock += quantity; // can be positive or negative
+            // Always work with a positive amount; the action decides the sign
+            var q = Math.Abs(quantity);
 
+            // Decide the signed delta based on the action type
+            int delta;
+            switch (actionType)
+            {
+                case StockActionType.Increase:
+                case StockActionType.CancelledRestock:
+                    delta = q;      // stock goes up
+                    break;
+
+                case StockActionType.Decrease:
+                case StockActionType.Sold:
+                    delta = -q;     // stock goes down
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unsupported action type: {actionType}");
+            }
+
+            // Prevent negative stock (optional, but recommended)
+            var newStock = variant.Stock + delta;
+            if (newStock < 0)
+            {
+                throw new InvalidOperationException("Insufficient stock for this operation.");
+            }
+
+            variant.Stock = newStock;
+
+            // Log the action (store the absolute quantity; ActionType carries the meaning)
             var stockAction = new StockAction
             {
                 ProductVariantId = variantId,
-                Quantity = quantity,
+                Quantity = q,
                 ActionType = actionType,
-                OrderId = orderId,
-                Timestamp = DateTime.Now
+                OrderId = orderId,          // keep null if not provided
+                Timestamp = DateTime.UtcNow // UTC is safer for logs
             };
 
             _context.StockActions.Add(stockAction);
@@ -48,6 +79,7 @@ namespace OC.LUAC.ServiceLayer.Services
 
             return stockAction;
         }
+
 
         /// <summary>
         /// Retrieves the stock log for a specific product variant.

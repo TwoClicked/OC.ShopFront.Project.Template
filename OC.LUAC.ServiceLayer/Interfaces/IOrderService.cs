@@ -26,7 +26,7 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         Task<Order?> GetOrderByIdAsync(int orderId);
 
         /// <summary>
-        /// Marks an order as paid.
+        /// Marks an order as shipped.
         /// </summary>
         /// <param name="orderId"></param>
         /// <param name="trackingNumber"></param>

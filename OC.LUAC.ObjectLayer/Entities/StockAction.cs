@@ -13,10 +13,10 @@ namespace OC.LUAC.ObjectLayer.Entities
     /// </summary>
     public enum StockActionType
     {
-        Add,
-        Reduce,
-        Sale,
-        Cancel
+        Increase = 1,          // manual restock, PO received, correction +
+        Decrease = 2,          // manual correction -, shrinkage
+        Sold = 3,              // order captured/fulfilled (stock down)
+        CancelledRestock = 4   // order cancelled -> put stock back
     }
     /// <summary>
     /// Represents a stock action performed on a product variant in the e-commerce platform.
