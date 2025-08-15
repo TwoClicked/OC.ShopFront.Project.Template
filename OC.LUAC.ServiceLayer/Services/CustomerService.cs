@@ -23,23 +23,47 @@ namespace OC.LUAC.ServiceLayer.Services
         }
 
         /// <summary>
-        /// Deletes a customer by marking them as deleted instead of physically removing them from the database.
+        /// Soft delete (GDPR)
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
         public async Task<bool> DeleteCustomerAsync(int id)
         {
             var customer = await _context.Customers
-                .FindAsync(id);
-            if (customer == null || customer.IsDeleted)
+                .Include(c => c.Addresses)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (customer == null || customer.IsDeleted) return false;
+
+            // Mark & timestamp
+            customer.IsDeleted = true;
+            customer.DeletedAt = DateTime.UtcNow;
+
+            // Scrub PII on Customer (use unique email to satisfy unique index)
+            customer.FirstName = "[Deleted]";
+            customer.LastName = "[Deleted]";
+            customer.Email = $"deleted_{customer.Id}@anon.invalid";
+            customer.PasswordHash = HashPassword(Guid.NewGuid().ToString("N"));           // Safe NULL
+            customer.Language = string.Empty;   // or leave as-is
+
+            // Scrub Addresses (keep FK, but clear personal fields)
+            if (customer.Addresses != null)
             {
-                return false; // Customer not found or already deleted
+                foreach (var a in customer.Addresses.Where(a => !a.IsDeleted))
+                {
+                    a.IsDeleted = true;
+                    a.DeletedAt = DateTime.UtcNow;
+                    a.Label = "[Deleted]";
+                    a.Street = string.Empty;
+                    a.Number = string.Empty;
+                    a.PostalCode = string.Empty;
+                    a.City = string.Empty;
+                    a.Country = string.Empty;
+                }
             }
 
-            customer.IsDeleted = true; // Mark as deleted
-            customer.DeletedAt = DateTime.Now; // Set deletion timestamp
             await _context.SaveChangesAsync();
-            return true; // Deletion successful
+            return true;
         }
 
         /// <summary>
@@ -68,6 +92,10 @@ namespace OC.LUAC.ServiceLayer.Services
             {
                 return null;
             }
+
+            user.LastLoginAt = DateTime.UtcNow; // use UTC for consistency
+            await _context.SaveChangesAsync();  // persist the change
+
             return user; // Return the user if credentials are valid
         }
 
@@ -79,11 +107,30 @@ namespace OC.LUAC.ServiceLayer.Services
         /// <returns></returns>
         public async Task<Customer?> RegisterAsync(Customer customer, string plainPassword)
         {
-            customer.PasswordHash = HashPassword(plainPassword);
-            customer.CreatedAt = DateTime.Now;
+            // Normalize & basic checks
+            var email = customer.Email?.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(email)) return null;
 
+            var exists = await _context.Customers
+                .AnyAsync(c => c.Email == email && !c.IsDeleted);
+            if (exists)
+            {
+                throw new InvalidOperationException("A customer with this email already exists.");
+            }
+
+            // Hash password (use your existing hashing util)
+            var hash = HashPassword(plainPassword); // your method
+            customer.Email = email;
+            customer.PasswordHash = hash;
+
+            // Timestamps
+            customer.CreatedAt = DateTime.UtcNow;
+            customer.LastLoginAt = DateTime.UtcNow;   // <= consider them “logged in” on registration
+
+            // Persist
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
+
             return customer;
         }
 

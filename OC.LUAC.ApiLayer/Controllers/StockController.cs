@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using OC.LUAC.ObjectLayer.Entities;
 using OC.LUAC.ObjectLayer.Orders;
+using Microsoft.AspNetCore.Authorization;
 
 namespace OC.LUAC.ApiLayer.Controllers
 {
@@ -40,6 +41,7 @@ namespace OC.LUAC.ApiLayer.Controllers
 
         // POST /api/stock/adjust
         [HttpPost("adjust")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Adjust([FromBody] AdjustStockDto dto)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);

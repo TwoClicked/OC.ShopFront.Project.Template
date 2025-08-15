@@ -6,6 +6,7 @@ using OC.LUAC.ServiceLayer.Interfaces;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace OC.LUAC.ApiLayer.Controllers
 {
@@ -30,6 +31,7 @@ namespace OC.LUAC.ApiLayer.Controllers
 
         // POST /api/products/{productId}/variants
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ProductVariant>> Create(int productId, [FromBody] CreateProductVariantDto dto)
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -48,6 +50,7 @@ namespace OC.LUAC.ApiLayer.Controllers
 
         // PUT /api/products/{productId}/variants/{variantId}
         [HttpPut("{variantId:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ProductVariant>> Update(int productId, int variantId, [FromBody] UpdateProductVariantDto dto)
         {
             if (!ModelState.IsValid)
@@ -71,6 +74,7 @@ namespace OC.LUAC.ApiLayer.Controllers
 
         // DELETE /api/products/{productId}/variants/{variantId}
         [HttpDelete("{variantId:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SoftDelete(int productId, int variantId)
         {
             var ok = await _variants.SoftDeleteVariatAsync(variantId);

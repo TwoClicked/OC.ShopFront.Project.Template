@@ -2,6 +2,7 @@
 using OC.LUAC.ServiceLayer.Interfaces;
 using OC.LUAC.ApiLayer.DTO.Product;
 using OC.LUAC.ObjectLayer.Entities;
+using Microsoft.AspNetCore.Authorization;
 
 namespace OC.LUAC.ApiLayer.Controllers
 {
@@ -56,6 +57,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(ObjectLayer.Entities.Product), 201)]
         [ProducesResponseType(400)]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ObjectLayer.Entities.Product>> Create([FromBody] CreateProductDto dto)
         {
             if (!ModelState.IsValid)
@@ -83,6 +85,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         [ProducesResponseType(typeof(ObjectLayer.Entities.Product), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ObjectLayer.Entities.Product>> Update(int id, [FromBody] UpdateProductDto dto)
         {
             if (!ModelState.IsValid)
@@ -110,6 +113,7 @@ namespace OC.LUAC.ApiLayer.Controllers
 
         // DELETE /api/products/{id}
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SoftDelete(int id)
         {
             var result = await _products.SoftDeleteProductAsync(id);

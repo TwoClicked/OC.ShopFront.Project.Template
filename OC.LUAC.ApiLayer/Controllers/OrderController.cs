@@ -1,4 +1,5 @@
 ﻿// OC.LUAC.ApiLayer/Controllers/OrderController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OC.LUAC.ApiLayer.DTO.Order;
 using OC.LUAC.ObjectLayer.Accounts;   // Customer
@@ -163,6 +164,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         [HttpPut("{id:int}/ship")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> MarkShipped(int id, [FromBody] ShipOrderDto dto)
         {
             // No Status required here; we always set to Shipped via the service
@@ -180,6 +182,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         [HttpPut("{id:int}/cancel")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Cancel(int id)
         {
             var ok = await _orders.CancelOrderAsync(id);

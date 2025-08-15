@@ -1,4 +1,5 @@
 ﻿// OC.LUAC.ApiLayer/Controllers/CategoryController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OC.LUAC.ApiLayer.DTO.Category;
 using OC.LUAC.ObjectLayer.Entities;
@@ -41,6 +42,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(Category), 201)]
         [ProducesResponseType(400)]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Category>> Create([FromBody] CreateCategoryDto dto)
         {
             if (!ModelState.IsValid)
@@ -63,6 +65,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         [ProducesResponseType(typeof(Category), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Category>> Update(int id, [FromBody] UpdateCategoryDto dto)
         {
             if (!ModelState.IsValid)
@@ -85,6 +88,7 @@ namespace OC.LUAC.ApiLayer.Controllers
 
         // DELETE /api/categories/{id}  (soft delete)
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SoftDelete(int id)
         {
             var ok = await _categories.SoftDeleteCategoryAsync(id);

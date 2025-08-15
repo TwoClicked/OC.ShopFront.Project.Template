@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace OC.LUAC.ApiLayer.Controllers
 {
@@ -45,9 +46,8 @@ namespace OC.LUAC.ApiLayer.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(ProductImageResponseDto), 201)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<ProductImageResponseDto>> AddImageByUrl(
-            int productId,
-            [FromBody] CreateProductImageDto dto)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<ProductImageResponseDto>> AddImageByUrl(int productId,[FromBody] CreateProductImageDto dto)
         {
             if (!ModelState.IsValid)
             {
@@ -74,9 +74,8 @@ namespace OC.LUAC.ApiLayer.Controllers
         [RequestSizeLimit(10 * 1024 * 1024)]
         [ProducesResponseType(typeof(ProductImageResponseDto), 201)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<ProductImageResponseDto>> UploadSingle(
-            int productId,
-            [FromForm] UploadProductImageForm form)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<ProductImageResponseDto>> UploadSingle(int productId,[FromForm] UploadProductImageForm form)
         {
             if (!ModelState.IsValid)
             {
@@ -105,9 +104,8 @@ namespace OC.LUAC.ApiLayer.Controllers
         [RequestSizeLimit(40 * 1024 * 1024)]
         [ProducesResponseType(typeof(List<ProductImageResponseDto>), 201)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<List<ProductImageResponseDto>>> UploadMultiple(
-            int productId,
-            [FromForm] UploadMultipleProductImagesForm form)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<List<ProductImageResponseDto>>> UploadMultiple(int productId,[FromForm] UploadMultipleProductImagesForm form)
         {
             if (!ModelState.IsValid)
             {
@@ -151,10 +149,8 @@ namespace OC.LUAC.ApiLayer.Controllers
         [HttpPut("{imageId:int}")]
         [ProducesResponseType(typeof(ProductImageResponseDto), 200)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<ProductImageResponseDto>> UpdateImage(
-            int productId,
-            int imageId,
-            [FromBody] UpdateProductImageDto dto)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<ProductImageResponseDto>> UpdateImage(int productId,int imageId,[FromBody] UpdateProductImageDto dto)
         {
             if (!ModelState.IsValid)
             {
@@ -182,6 +178,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         [HttpPut("reorder")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Reorder(int productId, [FromBody] List<ImageOrderItem> items)
         {
             if (items == null || items.Count == 0)
@@ -208,6 +205,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         [HttpDelete("{imageId:int}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteImage(int productId, int imageId)
         {
             // Optional: delete physical file too
