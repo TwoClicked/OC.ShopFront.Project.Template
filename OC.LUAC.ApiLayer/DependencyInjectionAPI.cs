@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using OC.LUAC.ApiLayer.Auth;
 using OC.LUAC.ApiLayer.Storage;
+using OC.LUAC.ApiLayer.Startup;
 
 namespace OC.LUAC.ApiLayer
 {
@@ -41,6 +42,9 @@ namespace OC.LUAC.ApiLayer
                 });
 
             services.AddAuthorization();
+
+            //  Register the seeding hosted service (runs once on startup)
+            services.AddHostedService<AdminSeedHostedService>();
 
             return services;
         }

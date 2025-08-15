@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using OC.LUAC.ApiLayer.Auth;
 using OC.LUAC.ApiLayer.DTO.Admin;
+using OC.LUAC.ServiceLayer.Interfaces;
 
 namespace OC.LUAC.ApiLayer.Controllers
 {
@@ -9,28 +9,25 @@ namespace OC.LUAC.ApiLayer.Controllers
     [Route("api/admin/auth")]
     public class AdminAuthController : ControllerBase
     {
-        private readonly IConfiguration _config;
+        private readonly IAdminUserService _admins;
         private readonly ITokenService _tokens;
 
-        public AdminAuthController(IConfiguration config, ITokenService tokens)
+        public AdminAuthController(IAdminUserService admins, ITokenService tokens)
         {
-            _config = config; _tokens = tokens;
+            _admins = admins;
+            _tokens = tokens;
         }
 
         [HttpPost("login")]
-        public ActionResult<object> Login([FromBody] AdminLoginDto dto)
+        public async Task<IActionResult> Login([FromBody] AdminLoginDto dto)
         {
-            var adminEmail = _config["AdminAuth:Email"];
-            var adminPass = _config["AdminAuth:Password"];
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-            if (string.Equals(dto.Email?.Trim(), adminEmail, StringComparison.OrdinalIgnoreCase)
-                && dto.Password == adminPass)
-            {
-                var token = _tokens.CreateAdminToken(adminEmail);
-                return Ok(new { token, role = "Admin" });
-            }
+            var admin = await _admins.LoginAsync(dto.Email, dto.Password);
+            if (admin == null || !admin.IsActive) return Unauthorized();
 
-            return Unauthorized();
+            var token = _tokens.CreateAdminToken(admin.Email);
+            return Ok(new { token, role = "Admin", admin = new { admin.Id, admin.Email} });
         }
     }
 }
