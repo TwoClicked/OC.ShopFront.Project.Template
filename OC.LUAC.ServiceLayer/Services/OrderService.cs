@@ -1,8 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OC.LUAC.DataLayer;
+using OC.LUAC.ObjectLayer.Entities;
 using OC.LUAC.ObjectLayer.Orders;
 using OC.LUAC.ServiceLayer.Interfaces;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,10 +16,12 @@ namespace OC.LUAC.ServiceLayer.Services
     {
 
         private readonly AppDbContext _context;
+        private readonly IStockActionService _stockActionService;
 
-        public OrderService(AppDbContext context)
+        public OrderService(AppDbContext context, IStockActionService stockActionService)
         {
             _context = context;
+            _stockActionService = stockActionService;
         }
 
         /// <summary>
@@ -92,17 +96,45 @@ namespace OC.LUAC.ServiceLayer.Services
         /// <returns></returns>
         public async Task<bool> CancelOrderAsync(int orderId)
         {
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Orders
+                .Include(o => o.Items) // include items for restock
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
             if (order == null || order.IsDeleted)
+                return false;
+
+            // Restock items
+            foreach (var oi in order.Items)
             {
-                return false; // Order not found or already deleted
+                await _stockActionService.RecordStockChangeAsync(
+                    oi.ProductVariantId,
+                    oi.Quantity,
+                    StockActionType.CancelledRestock,
+                    order.Id);
             }
+
+            // Mark as cancelled
             order.Status = OrderStatus.Cancelled;
-            order.IsDeleted = true; // Soft delete the order
+            order.IsDeleted = true;
             order.DeletedAt = DateTime.UtcNow;
+
             _context.Orders.Update(order);
             await _context.SaveChangesAsync();
+
             return true;
         }
+
+        public async Task<List<Order>> GetAllOrdersAsync()
+        {
+            return await _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)          // ✅ navigation property
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.ProductVariant)   // ✅ navigation property
+                .Include(o => o.Customer)
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+        }
+
     }
 }

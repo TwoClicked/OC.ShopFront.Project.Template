@@ -40,5 +40,8 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         /// <param name="orderId"></param>
         /// <returns></returns>
         Task<bool> CancelOrderAsync(int orderId);
+
+        Task<List<Order>> GetAllOrdersAsync();
+
     }
 }

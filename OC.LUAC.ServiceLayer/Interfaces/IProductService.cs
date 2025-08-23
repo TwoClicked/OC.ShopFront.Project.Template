@@ -18,6 +18,8 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         /// </summary>
         /// <returns></returns>
         Task<List<Product>> GetAllProductsAsync();
+        Task<Product?> GetByIdWithDetailsAsync(int id);
+
         /// <summary>
         /// Retrieves featured products from the database, including their images and variants.
         /// </summary>
@@ -35,6 +37,8 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         /// <param name="categoryId"></param>
         /// <returns></returns>
         Task<List<Product>> GetProductsByCategoryAsync(int categoryId);
+        Task<(IReadOnlyList<Product> Items, int Total)> SearchAsync(string? term, int? categoryId, bool? featured, string sort, bool desc, int page, int pageSize);
+
         /// <summary>
         /// Soft deletes a product by setting its IsDeleted flag to true and recording the deletion time.
         /// </summary>

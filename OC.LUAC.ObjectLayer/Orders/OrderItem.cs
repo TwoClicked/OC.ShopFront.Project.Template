@@ -1,36 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using OC.LUAC.ObjectLayer.Entities; // for Product, ProductVariant
 
 namespace OC.LUAC.ObjectLayer.Orders
 {
-    /// <summary>
-    /// Represents an item in an order. This class is used to store details of each product variant ordered, including its quantity and price at the time of the order.
-    /// </summary>
     public class OrderItem
     {
-
-        //primary key
         public int Id { get; set; }
 
-        //Foreign key to Order
+        // Foreign key to Order
         public int OrderId { get; set; }
         public Order Order { get; set; }
 
+        // Foreign key to Product
+        public int ProductId { get; set; }
+        public Product Product { get; set; }   // ✅ Navigation
 
-        public int ProductId { get; set; } // Foreign key to Product
-        public string ProductName { get; set; } // Snapshot of the product name at the time of order
+        // Snapshot
+        public string ProductName { get; set; }
 
+        // Foreign key to ProductVariant
+        public int ProductVariantId { get; set; }
+        public ProductVariant ProductVariant { get; set; }  // ✅ Navigation
 
-        public int productVariantId { get; set; } // Foreign key to ProductVariant
-        public string Size { get; set; } // Size of the product variant
+        // Snapshot
+        public string Size { get; set; }
 
-        public int Quantity { get; set; } // Quantity of this product variant in the order
-        public decimal UnitPrice { get; set; } // Price of the product variant at the time of order
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
 
-        public decimal Total => UnitPrice * Quantity; // Total price for this order item (calculated property) Won't be stored in the database 
-
+        public decimal Total => UnitPrice * Quantity;
     }
 }

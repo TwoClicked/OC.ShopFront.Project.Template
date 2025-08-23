@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using OC.LUAC.ApiLayer;
 using OC.LUAC.ServiceLayer;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,9 @@ builder.Services.AddApiLayerServices(builder.Configuration);
 
 // Service layer DI
 builder.Services.AddProjectServices(builder.Configuration);
+
+// QuestPDF license
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Controllers + JSON options
 builder.Services
@@ -28,7 +32,7 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "Luac API", Version = "v1" });
+    c.SwaggerDoc("v1", new() { Title = "LUAC API", Version = "v1" });
     c.CustomSchemaIds(t => t.FullName);
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {

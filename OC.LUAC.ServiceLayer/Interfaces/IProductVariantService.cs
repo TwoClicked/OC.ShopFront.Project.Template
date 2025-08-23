@@ -40,5 +40,8 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         /// <param name="id"></param>
         /// <returns></returns>
         Task<bool> SoftDeleteVariatAsync(int id);
+
+        Task<ProductVariant?> GetVariantByIdAsync(int id);
+        Task<List<ProductVariant>> GetAllVariantsAsync();
     }
 }

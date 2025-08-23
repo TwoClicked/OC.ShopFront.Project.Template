@@ -56,6 +56,16 @@ namespace OC.LUAC.ServiceLayer.Services
             return true; // Stock adjustment successful
         }
 
+        public async Task<List<ProductVariant>> GetAllVariantsAsync()
+        {
+            return await _context.ProductVariants.Where(v => !v.IsDeleted).ToListAsync();
+        }
+
+        public async Task<ProductVariant?> GetVariantByIdAsync(int id)
+        {
+            return await _context.ProductVariants.FirstOrDefaultAsync(v => v.Id == id && !v.IsDeleted);
+        }
+
         /// <summary>
         /// Retrieves all product variants associated with a specific product ID.
         /// </summary>

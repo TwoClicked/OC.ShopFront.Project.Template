@@ -16,11 +16,13 @@ namespace OC.LUAC.ApiLayer.Controllers
     {
         private readonly IStockActionService _stock;
         private readonly IOrderService _order;
+        private readonly IProductVariantService _variants;
 
-        public StockController(IStockActionService stock, IOrderService order)
+        public StockController(IStockActionService stock, IOrderService order, IProductVariantService variants)
         {
             _stock = stock;
             _order = order;
+            _variants = variants;
         }
 
         // GET /api/stock/variant/{variantId}/log
@@ -59,6 +61,52 @@ namespace OC.LUAC.ApiLayer.Controllers
             if (action == null) return Problem("Stock adjustment failed.");
 
             return Ok(action);
+        }
+
+        // GET /api/stock/variant/{variantId}
+        [HttpGet("variant/{variantId:int}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<int>> GetStockForVariant(int variantId)
+        {
+            var variant = await _variants.GetVariantByIdAsync(variantId);
+            if (variant == null)
+                return NotFound();
+
+            return Ok(variant.Stock);
+        }
+
+        // GET /api/stock/product/{productId}
+        [HttpGet("product/{productId:int}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<object>>> GetStockForProduct(int productId)
+        {
+            var list = await _variants.GetVariantsByProductIdAsync(productId);
+            if (list == null || list.Count == 0)
+                return NotFound();
+
+            return Ok(list.Select(v => new
+            {
+                v.Id,
+                v.Size,
+                v.Stock
+            }));
+        }
+
+        // GET /api/stock/low?threshold=5
+        [HttpGet("low")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<List<object>>> GetLowStock([FromQuery] int threshold = 5)
+        {
+            var all = await _variants.GetAllVariantsAsync();
+            var low = all.Where(v => v.Stock <= threshold).Select(v => new
+            {
+                v.Id,
+                v.ProductId,
+                v.Size,
+                v.Stock
+            });
+
+            return Ok(low);
         }
     }
 }

@@ -8,9 +8,9 @@ namespace OC.LUAC.ApiLayer.DTO.Order
         public int? CustomerId { get; set; }
 
         // Guest path: if CustomerId is null, we'll create a minimal customer
-        public string Email { get; set; }        // required when CustomerId is null
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
+        public string? Email { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
 
         public string Language { get; set; } = "en";
 

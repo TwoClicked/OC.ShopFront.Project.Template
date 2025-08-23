@@ -149,5 +149,80 @@ namespace OC.LUAC.ServiceLayer.Services
             return true; // Deletion successful
 
         }
+
+        public async Task<(IReadOnlyList<Product> Items, int Total)> SearchAsync(string? term, int? categoryId, bool? featured,string sort, bool desc, int page, int pageSize)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 24;
+            if (pageSize > 200) pageSize = 200;
+
+            // Base query (only non-deleted products)
+            IQueryable<Product> q = _context.Products
+                .AsNoTracking()
+                .Include(p => p.Category)
+                .Include(p => p.Images.Where(i => !i.IsDeleted))
+                .Include(p => p.Variants.Where(v => !v.IsDeleted))
+                .Where(p => !p.IsDeleted);
+
+            // Filters
+            if (!string.IsNullOrWhiteSpace(term))
+            {
+                var t = term.Trim();
+                // case-insensitive LIKE that translates to SQL
+                q = q.Where(p =>
+                    EF.Functions.Like(p.Name_en, $"%{t}%") ||
+                    (p.Name_de != null && EF.Functions.Like(p.Name_de, $"%{t}%")) ||
+                    (p.Description_en != null && EF.Functions.Like(p.Description_en, $"%{t}%")) ||
+                    (p.Description_de != null && EF.Functions.Like(p.Description_de, $"%{t}%"))
+                );
+            }
+
+            if (categoryId.HasValue)
+                q = q.Where(p => p.CategoryId == categoryId.Value);
+
+            if (featured.HasValue)
+                q = q.Where(p => p.IsFeatured == featured.Value);
+
+            // Sorting
+            switch ((sort ?? "newest").ToLowerInvariant())
+            {
+                case "price":
+                    q = desc ? q.OrderByDescending(p => p.Price) : q.OrderBy(p => p.Price);
+                    break;
+
+                case "name":
+                    q = desc ? q.OrderByDescending(p => p.Name_en) : q.OrderBy(p => p.Name_en);
+                    break;
+
+                case "name_de":
+                    q = desc ? q.OrderByDescending(p => p.Name_de) : q.OrderBy(p => p.Name_de);
+                    break;
+
+                default: // "newest"
+                    // if you have CreatedAt, prefer that; else fall back to Id
+                    q = q.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id);
+                    if (!desc) q = q.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id);
+                    break;
+            }
+
+            var total = await q.CountAsync();
+
+            var items = await q
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
+        }
+
+        public async Task<Product?> GetByIdWithDetailsAsync(int id)
+        {
+            return await _context.Products
+                .AsNoTracking()
+                .Include(p => p.Category)
+                .Include(p => p.Images.Where(i => !i.IsDeleted))
+                .Include(p => p.Variants.Where(v => !v.IsDeleted))
+                .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+        }
     }
 }
