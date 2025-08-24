@@ -60,5 +60,19 @@ namespace OC.LUAC.ObjectLayer.Orders
         public bool IsDeleted { get; set; } = false; // Indicates if the order is deleted
         public DateTime? DeletedAt { get; set; } // Timestamp when the order was deleted
 
+
+        // DISCOUNT & VOUCHER
+
+        public decimal? DiscountAmount { get; set; }      // how much discount was applied
+        public decimal TotalBeforeDiscount { get; set; }  // original subtotal
+        public decimal TotalAfterDiscount { get; set; }   // discounted total
+        public string? VoucherCode { get; set; }          // applied voucher
+
+
+        // SHIPPING COST
+
+        public decimal ShippingCost { get; set; } // Final shipping fee
+        public bool IsFreeShipping { get; set; } // True if treshold or voucher is applied
+
     }
 }

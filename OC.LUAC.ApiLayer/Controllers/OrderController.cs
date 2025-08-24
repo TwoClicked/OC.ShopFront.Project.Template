@@ -21,6 +21,8 @@ namespace OC.LUAC.ApiLayer.Controllers
         private readonly IProductService _products;
         private readonly IProductVariantService _variants;
         private readonly IEmailService _emailService;
+        private readonly IVoucherService _vouchers;
+        private readonly IShippingZoneService _shippingZones;
 
         public OrderController(
             IOrderService orders,
@@ -28,7 +30,9 @@ namespace OC.LUAC.ApiLayer.Controllers
             ICustomerService customers,
             IProductService products,
             IProductVariantService variants,
-            IEmailService emailService)
+            IEmailService emailService,
+            IVoucherService voucherService,
+            IShippingZoneService shippingService)
         {
             _orders = orders;
             _stock = stock;
@@ -36,6 +40,9 @@ namespace OC.LUAC.ApiLayer.Controllers
             _products = products;
             _variants = variants;
             _emailService = emailService;
+            _vouchers = voucherService;
+            _shippingZones = shippingService;
+
         }
 
         // -------------------------------------------------
@@ -179,6 +186,66 @@ namespace OC.LUAC.ApiLayer.Controllers
                 });
             }
 
+            // ---- calculate product totals ----
+            decimal totalBeforeDiscount = builtItems.Sum(i => i.UnitPrice * i.Quantity);
+            decimal discount = 0;
+            decimal totalAfterDiscount = totalBeforeDiscount;
+
+            // ---- apply voucher if provided ----
+            if (!string.IsNullOrWhiteSpace(dto.VoucherCode))
+            {
+                var voucher = await _vouchers.GetVoucherByCodeAsync(dto.VoucherCode);
+                if (voucher == null || !voucher.IsActive)
+                    return BadRequest("Invalid or inactive voucher code.");
+
+                if (DateTime.UtcNow < voucher.StartDate || DateTime.UtcNow > voucher.EndDate)
+                    return BadRequest("Voucher not valid at this time.");
+
+                if (voucher.MaxUsageCount.HasValue && voucher.CurrentUsageCount >= voucher.MaxUsageCount.Value)
+                    return BadRequest("Voucher usage limit reached.");
+
+                if (voucher.Percentage.HasValue)
+                    discount += totalBeforeDiscount * (voucher.Percentage.Value / 100m);
+
+                if (voucher.FixedAmount.HasValue)
+                    discount += voucher.FixedAmount.Value;
+
+                if (discount > totalBeforeDiscount) discount = totalBeforeDiscount;
+
+                totalAfterDiscount = totalBeforeDiscount - discount;
+
+                voucher.CurrentUsageCount++;
+                await _vouchers.UpdateVoucherAsync(voucher);
+            }
+
+            // ---- calculate shipping ----
+            var zone = await _shippingZones.GetZoneByCountryAsync(dto.ShippingCountry);
+            if (zone == null)
+                return BadRequest("We do not currently ship to this region.");
+
+            decimal shippingCost = zone.BaseCost;
+            bool isFreeShipping = false;
+
+            if (totalBeforeDiscount >= zone.FreeShippingThreshold)
+            {
+                shippingCost = 0;
+                isFreeShipping = true;
+            }
+
+            // Voucher override for free shipping
+            if (!string.IsNullOrWhiteSpace(dto.VoucherCode))
+            {
+                var voucher = await _vouchers.GetVoucherByCodeAsync(dto.VoucherCode);
+                if (voucher?.AppliesToShipping == true)
+                {
+                    shippingCost = 0;
+                    isFreeShipping = true;
+                }
+            }
+
+            totalAfterDiscount += shippingCost;
+
+            // ---- build order ----
             var order = new Order
             {
                 OrderNumber = GenerateOrderNumber(),
@@ -191,12 +258,18 @@ namespace OC.LUAC.ApiLayer.Controllers
                 ShippingCountry = dto.ShippingCountry,
                 Status = OrderStatus.New,
                 CreatedAt = DateTime.UtcNow,
-                Items = builtItems
+                Items = builtItems,
+                VoucherCode = dto.VoucherCode,
+                TotalBeforeDiscount = totalBeforeDiscount,
+                DiscountAmount = discount,
+                TotalAfterDiscount = totalAfterDiscount,
+                ShippingCost = shippingCost,
+                IsFreeShipping = isFreeShipping
             };
 
             var created = await _orders.CreateOrderAsync(order);
 
-            //Generate PDF
+            // ---- generate PDF ----
             var pdf = PdfGenerator.GenerateOrderPdf(created);
 
             // fetch customer entity for email
@@ -204,17 +277,64 @@ namespace OC.LUAC.ApiLayer.Controllers
             if (customer == null)
                 return BadRequest("Customer not found after order creation.");
 
-            //Send confirmation email
+            // ---- send confirmation email ----
+            var lang = created.Language ?? "en";
+            var t = Localization.T;
+
+            var subject = $"{t(lang, "OrderConfirmation")} - {created.OrderNumber}";
+
+            var body = $@"
+             <p>{t(lang, "Hello")} {customer.FirstName},</p>
+             <p>{t(lang, "ThanksForOrder")} <b>{created.OrderNumber}</b>.</p>
+
+             <p><strong>{t(lang, "OrderNumber")}:</strong> {created.OrderNumber}</p>
+             <p><strong>{t(lang, "Date")}:</strong> {created.CreatedAt:yyyy-MM-dd}</p>
+
+             <table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'>
+                <tr>
+            <th>{t(lang, "Product")}</th>
+            <th>{t(lang, "Qty")}</th>
+            <th>{t(lang, "Price")}</th>
+            <th>{t(lang, "Total")}</th>
+             </tr>";
+
+            foreach (var item in created.Items)
+            {
+                var lineTotal = item.Quantity * item.UnitPrice;
+                body += $@"
+             <tr>
+                 <td>{item.ProductName} ({item.Size})</td>
+                 <td>{item.Quantity}</td>
+                 <td>{item.UnitPrice:C}</td>
+                 <td>{lineTotal:C}</td>
+             </tr>";
+            }
+
+            body += "</table>";
+
+            // Subtotal + discount only if discount applied
+            if (created.DiscountAmount.HasValue && created.DiscountAmount.Value > 0)
+            {
+                body += $@"<p><strong>{t(lang, "Subtotal")}:</strong> {created.TotalBeforeDiscount:C}</p>";
+                body += $@"<p><strong>{t(lang, "Discount")} ({created.VoucherCode}):</strong> -{created.DiscountAmount:C}</p>";
+            }
+
+            // Shipping line (always show, even if free)
+            body += $@"<p><strong>{t(lang, "Shipping")}:</strong> {(created.ShippingCost > 0 ? created.ShippingCost.ToString("C") : t(lang, "Free"))}</p>";
+
+            body += $@"
+            <p><strong>{t(lang, "GrandTotal")}:</strong> {created.TotalAfterDiscount:C}</p>
+            <p>{t(lang, "ThankYou")}</p>";
 
             await _emailService.SendEmailAsync(
                 to: customer.Email,
-                subject: $"Order Confirmation - {created.OrderNumber}",
-                body: $"<p>Hi {customer.FirstName},</p><p>Thanks for your order <b>{created.OrderNumber}</b>!</p>",
+                subject: subject,
+                body: body,
                 pdfAttachment: pdf,
-                attachmentName: $"Order-{created.OrderNumber}.pdf"
+                attachmentName: $"Order {created.OrderNumber}.pdf"
             );
 
-
+            // record stock movement
             foreach (var oi in created.Items)
             {
                 await _stock.RecordStockChangeAsync(
@@ -226,6 +346,8 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, MapToDetailDto(created));
         }
+
+
 
         [HttpPut("{id:int}/ship")]
         [Authorize(Roles = "Admin")]
@@ -248,22 +370,26 @@ namespace OC.LUAC.ApiLayer.Controllers
             if (customer == null) return NotFound("Customer not found for this order.");
 
             // build email body
+            var lang = order.Language ?? "en";
+            var subject = $"{Localization.T(lang, "OrderShipped")} - {order.OrderNumber}";
+
             var trackingText = (!string.IsNullOrEmpty(order.TrackingNumber) && !string.IsNullOrEmpty(order.TrackingUrl))
-                ? $"<p>Your tracking number: <b>{order.TrackingNumber}</b><br/>" +
+                ? $"<p>{Localization.T(lang, "OrderShipped")} <br/>" +
+                  $"{Localization.T(lang, "TrackingNumber")}: <b>{order.TrackingNumber}</b><br/>" +
                   $"Track here: <a href='{order.TrackingUrl}' target='_blank'>{order.TrackingUrl}</a></p>"
                 : !string.IsNullOrEmpty(order.TrackingNumber)
-                    ? $"<p>Your tracking number: <b>{order.TrackingNumber}</b></p>"
-                    : "<p>No tracking information was provided.</p>";
+                    ? $"<p>{Localization.T(lang, "TrackingNumber")}: <b>{order.TrackingNumber}</b></p>"
+                    : "<p>No tracking information provided.</p>";
 
             var body = $@"
-             <p>Hi {customer.FirstName},</p>
-             <p>Your order <b>{order.OrderNumber}</b> has been shipped!</p>
+             <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
              {trackingText}
-            <p>Thank you for shopping with LUAC.</p>";
+             <p>{Localization.T(lang, "ThankYou")}</p>";
+
 
             await _emailService.SendEmailAsync(
                 to: customer.Email,
-                subject: $"Your order {order.OrderNumber} has shipped!",
+                subject: subject,
                 body: body);
 
             return Ok(new { id, status = "Shipped" });
@@ -275,8 +401,38 @@ namespace OC.LUAC.ApiLayer.Controllers
         public async Task<IActionResult> Cancel(int id)
         {
             var ok = await _orders.CancelOrderAsync(id);
-            return ok ? Ok(new { id, status = "Cancelled" }) : NotFound();
+            if (!ok) return NotFound();
+
+            var order = await _orders.GetOrderByIdAsync(id, includeDeleted: true); 
+            if (order == null) return NotFound("Order not found after cancellation.");
+
+            var customer = await _customers.GetCustomerByIdAsync(order.CustomerId.Value);
+            if (customer == null) return NotFound("Customer not found.");
+
+            var lang = order.Language ?? "en";
+            var subject = $"{Localization.T(lang, "OrderCancelledSubject")} - {order.OrderNumber}";
+            var body = $@"
+             <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
+             <p>{Localization.T(lang, "OrderCancelledBody")}</p>
+             <p>{Localization.T(lang, "ThankYou")}</p>";
+
+            await _emailService.SendEmailAsync(
+                to: customer.Email,
+                subject: subject,
+                body: body
+            );
+
+            return Ok(new { id, status = "Cancelled" });
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("shipped")]
+        public async Task<ActionResult<IEnumerable<Order>>> GetShippedOrders()
+        {
+            var orders = await _orders.GetShippedOrdersAsync();
+            return Ok(orders);
+        }
+
 
 
         // --- helpers ---

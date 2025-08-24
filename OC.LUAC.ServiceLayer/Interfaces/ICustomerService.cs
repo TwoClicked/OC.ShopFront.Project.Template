@@ -48,5 +48,15 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         /// <param name="id"></param>
         /// <returns></returns>
         Task<bool> DeleteCustomerAsync(int id);
+
+        /// <summary>
+        /// Allowing the user to change password
+        /// </summary>
+        /// <param name="customerId"></param>
+        /// <param name="oldPassword"></param>
+        /// <param name="newPassword"></param>
+        /// <returns></returns>
+        Task<bool> ChangePasswordAsync(int customerId, string oldPassword, string newPassword);
+
     }
 }

@@ -25,7 +25,8 @@ namespace OC.LUAC.ServiceLayer.Services
         }
 
         /// <summary>
-        /// Create a full order with items + shipping
+        /// Create a full order with items + 
+        /// 
         /// </summary>
         /// <param name="order"></param>
         /// <returns></returns>
@@ -59,11 +60,12 @@ namespace OC.LUAC.ServiceLayer.Services
         /// </summary>
         /// <param name="orderId"></param>
         /// <returns></returns>
-        public async Task<Order?> GetOrderByIdAsync(int orderId)
+        public async Task<Order?> GetOrderByIdAsync(int orderId, bool includeDeleted = false)
         {
             return await _context.Orders
                 .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.Id == orderId && !o.IsDeleted);
+                .FirstOrDefaultAsync(o =>
+                    o.Id == orderId && (includeDeleted || !o.IsDeleted));
         }
 
         /// <summary>
@@ -124,6 +126,12 @@ namespace OC.LUAC.ServiceLayer.Services
             return true;
         }
 
+
+        /// <summary>
+        /// Get all orders no matter OrderStatus
+        /// </summary>
+        /// <returns></returns>
+
         public async Task<List<Order>> GetAllOrdersAsync()
         {
             return await _context.Orders
@@ -135,6 +143,19 @@ namespace OC.LUAC.ServiceLayer.Services
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
         }
-
+        /// <summary>
+        /// Returns all shipped orders
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<Order>> GetShippedOrdersAsync()
+        {
+            return await _context.Orders
+                .Where(o => o.Status == OrderStatus.Shipped && !o.IsDeleted)
+                .Include(o => o.Items)
+                .Include(o => o.Customer)
+                .OrderByDescending (o => o.CreatedAt)
+                .ToListAsync();
+        }
+ 
     }
 }

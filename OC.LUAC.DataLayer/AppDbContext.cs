@@ -40,6 +40,10 @@ namespace OC.LUAC.DataLayer
 
         public DbSet<Order> Orders { get; set; } // Represents the Orders table in the database
         public DbSet<OrderItem> OrderItems { get; set; } // Represents the OrderItems table in the database
+        public DbSet<Voucher> Vouchers { get; set; }
+        public DbSet<ShippingZone> ShippingZones { get; set; }
+        public DbSet<ShippingZoneCountry> ShippingZoneCountries { get; set; }
+
 
         // Chat
 
@@ -55,7 +59,7 @@ namespace OC.LUAC.DataLayer
         {
             base.OnModelCreating(modelBuilder);
 
-            //ENUMs stored as strings
+            // ENUMs stored as strings
             modelBuilder.Entity<StockAction>()
                 .Property(sa => sa.ActionType)
                 .HasConversion<string>();
@@ -64,8 +68,7 @@ namespace OC.LUAC.DataLayer
                 .Property(o => o.Status)
                 .HasConversion<string>();
 
-            // Product > Category (Restict)
-
+            // Product > Category (Restrict)
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Category)
                 .WithMany(c => c.Products)
@@ -107,6 +110,20 @@ namespace OC.LUAC.DataLayer
                 .HasForeignKey(oi => oi.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // OrderItem → Product (Restrict) 
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Product)
+                .WithMany()
+                .HasForeignKey(oi => oi.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // OrderItem → ProductVariant (Restrict) 
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.ProductVariant)
+                .WithMany()
+                .HasForeignKey(oi => oi.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Customer → Orders (Restrict)
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.Customer)
@@ -131,19 +148,38 @@ namespace OC.LUAC.DataLayer
             // ChatSession → Customer (Restrict)
             modelBuilder.Entity<ChatSession>()
                 .HasOne(cs => cs.Customer)
-
                 .WithMany()
                 .HasForeignKey(cs => cs.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-
+            // Precision rules
             modelBuilder.Entity<Product>()
                 .Property(p => p.Price)
-                .HasPrecision(18, 2); // 18 digits total, 2 decimal places
+                .HasPrecision(18, 2);
 
             modelBuilder.Entity<OrderItem>()
                 .Property(oi => oi.UnitPrice)
                 .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Order>()
+                .Property(o => o.TotalBeforeDiscount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Order>()
+                .Property(o => o.TotalAfterDiscount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Order>()
+                .Property(o => o.DiscountAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<ShippingZoneCountry>()
+                .HasOne(c => c.ShippingZone)
+                .WithMany(z => z.Countries)
+                .HasForeignKey(c => c.ShippingZoneId)
+                .OnDelete(DeleteBehavior.Cascade);
+
         }
+
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OC.LUAC.DataLayer;
 
@@ -11,9 +12,11 @@ using OC.LUAC.DataLayer;
 namespace OC.LUAC.DataLayer.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250823190540_AddOrderDiscounts")]
+    partial class AddOrderDiscounts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -424,9 +427,6 @@ namespace OC.LUAC.DataLayer.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsFreeShipping")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Language")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -438,9 +438,6 @@ namespace OC.LUAC.DataLayer.Migrations
                     b.Property<string>("ShippingCity")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("ShippingCost")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ShippingCountry")
                         .IsRequired()
@@ -527,95 +524,6 @@ namespace OC.LUAC.DataLayer.Migrations
                     b.HasIndex("ProductVariantId");
 
                     b.ToTable("OrderItems");
-                });
-
-            modelBuilder.Entity("OC.LUAC.ObjectLayer.Orders.ShippingZone", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("BaseCost")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("FreeShippingThreshold")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ShippingZones");
-                });
-
-            modelBuilder.Entity("OC.LUAC.ObjectLayer.Orders.ShippingZoneCountry", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CountryCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ShippingZoneId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ShippingZoneId");
-
-                    b.ToTable("ShippingZoneCountries");
-                });
-
-            modelBuilder.Entity("OC.LUAC.ObjectLayer.Orders.Voucher", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("AppliesToShipping")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("CurrentUsageCount")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("FixedAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("MaxUsageCount")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("Percentage")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Vouchers");
                 });
 
             modelBuilder.Entity("OC.LUAC.ObjectLayer.Accounts.Address", b =>
@@ -738,17 +646,6 @@ namespace OC.LUAC.DataLayer.Migrations
                     b.Navigation("ProductVariant");
                 });
 
-            modelBuilder.Entity("OC.LUAC.ObjectLayer.Orders.ShippingZoneCountry", b =>
-                {
-                    b.HasOne("OC.LUAC.ObjectLayer.Orders.ShippingZone", "ShippingZone")
-                        .WithMany("Countries")
-                        .HasForeignKey("ShippingZoneId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ShippingZone");
-                });
-
             modelBuilder.Entity("OC.LUAC.ObjectLayer.Accounts.Customer", b =>
                 {
                     b.Navigation("Addresses");
@@ -781,11 +678,6 @@ namespace OC.LUAC.DataLayer.Migrations
             modelBuilder.Entity("OC.LUAC.ObjectLayer.Orders.Order", b =>
                 {
                     b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("OC.LUAC.ObjectLayer.Orders.ShippingZone", b =>
-                {
-                    b.Navigation("Countries");
                 });
 #pragma warning restore 612, 618
         }

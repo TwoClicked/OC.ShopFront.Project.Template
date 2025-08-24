@@ -159,6 +159,22 @@ namespace OC.LUAC.ServiceLayer.Services
             return hash == storedHash;
         }
 
+        public async Task<bool> ChangePasswordAsync(int customerId, string oldPassword, string newPassword)
+        {
+            var customer = await _context.Customers.FindAsync(customerId);
+            if (customer == null || customer.IsDeleted) return false;
+
+            if (!ValidatePassword(oldPassword, customer.PasswordHash))
+                return false;
+
+            customer.PasswordHash = HashPassword(newPassword);
+            _context.Customers.Update(customer);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+
         /// <summary>
         /// Hashes a plain-text password using SHA-256 and returns the hashed value as a Base64 string.
         /// </summary>

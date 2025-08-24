@@ -23,7 +23,7 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         /// </summary>
         /// <param name="orderId"></param>
         /// <returns></returns>
-        Task<Order?> GetOrderByIdAsync(int orderId);
+        Task<Order?> GetOrderByIdAsync(int orderId, bool includeDeleted = false);
 
         /// <summary>
         /// Marks an order as shipped.
@@ -42,6 +42,8 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         Task<bool> CancelOrderAsync(int orderId);
 
         Task<List<Order>> GetAllOrdersAsync();
+
+        Task<List<Order>> GetShippedOrdersAsync();
 
     }
 }

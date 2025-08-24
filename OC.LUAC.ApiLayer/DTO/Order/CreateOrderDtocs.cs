@@ -22,5 +22,9 @@ namespace OC.LUAC.ApiLayer.DTO.Order
         [Required] public string ShippingCountry { get; set; }
 
         [Required] public List<CreateOrderItemDto> Items { get; set; }
+
+        // Voucher
+        public string? VoucherCode { get; set; }
+
     }
 }

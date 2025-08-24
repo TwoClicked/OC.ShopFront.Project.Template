@@ -36,6 +36,8 @@ namespace OC.LUAC.ServiceLayer
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<IProductImageService, ProductImageService>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IVoucherService, VoucherService>();
+            services.AddScoped<IShippingZoneService, ShippingZoneService>();
 
             return services;
 
