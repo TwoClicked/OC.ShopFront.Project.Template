@@ -12,10 +12,10 @@ namespace OC.LUAC.ObjectLayer.Orders
     /// </summary>
     public enum OrderStatus
     {
-        New,
-        Paid,
-        Shipped,
-        Cancelled
+        PendingPayment, // Waiting for bank transfer
+        Processing, // Payment confirmed by admin, ready to process and ship
+        Shipped, // Shipped after payment
+        Cancelled // Cancelled by User or admin
     }
     /// <summary>
     /// Represents an order in the system.
@@ -43,7 +43,7 @@ namespace OC.LUAC.ObjectLayer.Orders
 
 
         //Order Status
-        public OrderStatus Status { get; set; } = OrderStatus.New; // Default status is New
+        public OrderStatus Status { get; set; } = OrderStatus.PendingPayment; // Default status is Pending payment
 
         // Tracking Info
         public string? TrackingNumber { get; set; } // Tracking number for the shipment

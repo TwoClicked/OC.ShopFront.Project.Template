@@ -60,8 +60,7 @@ namespace OC.LUAC.ServiceLayer.Utils
                             {
                                 c.Item().Text(t(lang, "ShippingAddress")).SemiBold();
                                 c.Item().Text($"{order.ShippingStreet} {order.ShippingNumber}");
-                                c.Item().Text($"{order.ShippingPostalCode} {order.ShippingCity}");
-                                c.Item().Text(order.ShippingCountry);
+                                c.Item().Text($"{order.ShippingCountry} {order.ShippingPostalCode} {order.ShippingCity}");
                             });
                         });
 
@@ -129,6 +128,26 @@ namespace OC.LUAC.ServiceLayer.Utils
                             {
                                 return container.PaddingVertical(5).BorderBottom(1).BorderColor(Colors.Grey.Lighten2);
                             }
+
+                            //PAYMENT INFO
+
+                            col.Item().PaddingTop(20).Column(c =>
+                            {
+                                c.Item().Text(t(lang, "PaymentInformation")).SemiBold();
+                                c.Item().Text(t(lang, "PleaseTransfer"));
+
+
+                                c.Item().Text($"{t(lang, "AccountHolder")}: LUAC Store");
+                                c.Item().Text($"{t(lang, "IBAN")}: AWAITING DATA");
+                                c.Item().Text($"{t(lang, "BIC")}: AWAITING DATA");
+                                c.Item().Text($"{t(lang, "Bank")}: AWAITING DATA");
+
+                                c.Item().Text($"{t(lang, "Reference")}: {order.OrderNumber}");
+
+                                c.Item().PaddingTop(10).Text(t(lang, "ImportantNotice")).SemiBold();
+                                c.Item().Text(t(lang, "OrderProcessedAfterPayment"));
+                                c.Item().Text(t(lang, "OrderCancelledIfNoPayment"));
+                            });
                         });
 
                         // Notes

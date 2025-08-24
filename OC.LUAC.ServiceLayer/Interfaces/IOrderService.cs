@@ -45,5 +45,7 @@ namespace OC.LUAC.ServiceLayer.Interfaces
 
         Task<List<Order>> GetShippedOrdersAsync();
 
+        Task<Order> UpdateOrderAsync(Order order);
+
     }
 }

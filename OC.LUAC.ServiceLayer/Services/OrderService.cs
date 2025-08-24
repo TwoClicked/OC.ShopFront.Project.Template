@@ -33,7 +33,7 @@ namespace OC.LUAC.ServiceLayer.Services
         public async Task<Order> CreateOrderAsync(Order order)
         {
             order.CreatedAt = DateTime.UtcNow;
-            order.Status = OrderStatus.New;
+            order.Status = OrderStatus.PendingPayment; // Orders start at pending payment
             order.OrderNumber = $"ORD-{DateTime.Now.Ticks}"; // Generate a unique order number based on the current timestamp
             
 
@@ -156,6 +156,12 @@ namespace OC.LUAC.ServiceLayer.Services
                 .OrderByDescending (o => o.CreatedAt)
                 .ToListAsync();
         }
- 
+
+        public async Task<Order> UpdateOrderAsync(Order order)
+        {
+            _context.Orders.Update(order);
+            await _context.SaveChangesAsync();
+            return order;
+        }
     }
 }

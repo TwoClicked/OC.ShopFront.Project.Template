@@ -256,7 +256,7 @@ namespace OC.LUAC.ApiLayer.Controllers
                 ShippingPostalCode = dto.ShippingPostalCode,
                 ShippingCity = dto.ShippingCity,
                 ShippingCountry = dto.ShippingCountry,
-                Status = OrderStatus.New,
+                Status = OrderStatus.PendingPayment,
                 CreatedAt = DateTime.UtcNow,
                 Items = builtItems,
                 VoucherCode = dto.VoucherCode,
@@ -284,47 +284,46 @@ namespace OC.LUAC.ApiLayer.Controllers
             var subject = $"{t(lang, "OrderConfirmation")} - {created.OrderNumber}";
 
             var body = $@"
-             <p>{t(lang, "Hello")} {customer.FirstName},</p>
-             <p>{t(lang, "ThanksForOrder")} <b>{created.OrderNumber}</b>.</p>
+            <p>{t(lang, "Hello")} {customer.FirstName},</p>
+            <p>{t(lang, "ThanksForOrder")}</b>.</p>
 
-             <p><strong>{t(lang, "OrderNumber")}:</strong> {created.OrderNumber}</p>
-             <p><strong>{t(lang, "Date")}:</strong> {created.CreatedAt:yyyy-MM-dd}</p>
-
-             <table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'>
-                <tr>
+            <table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'>
+            <tr>
             <th>{t(lang, "Product")}</th>
             <th>{t(lang, "Qty")}</th>
             <th>{t(lang, "Price")}</th>
             <th>{t(lang, "Total")}</th>
-             </tr>";
+            </tr>";
 
             foreach (var item in created.Items)
             {
                 var lineTotal = item.Quantity * item.UnitPrice;
                 body += $@"
-             <tr>
-                 <td>{item.ProductName} ({item.Size})</td>
-                 <td>{item.Quantity}</td>
-                 <td>{item.UnitPrice:C}</td>
-                 <td>{lineTotal:C}</td>
+            <tr>
+            <td>{item.ProductName} ({item.Size})</td>
+            <td>{item.Quantity}</td>
+            <td>{item.UnitPrice:C}</td>
+            <td>{lineTotal:C}</td>
              </tr>";
             }
 
             body += "</table>";
 
-            // Subtotal + discount only if discount applied
             if (created.DiscountAmount.HasValue && created.DiscountAmount.Value > 0)
             {
                 body += $@"<p><strong>{t(lang, "Subtotal")}:</strong> {created.TotalBeforeDiscount:C}</p>";
                 body += $@"<p><strong>{t(lang, "Discount")} ({created.VoucherCode}):</strong> -{created.DiscountAmount:C}</p>";
             }
 
-            // Shipping line (always show, even if free)
-            body += $@"<p><strong>{t(lang, "Shipping")}:</strong> {(created.ShippingCost > 0 ? created.ShippingCost.ToString("C") : t(lang, "Free"))}</p>";
+            body += $@"
+             <p><strong>{t(lang, "GrandTotal")}:</strong> {created.TotalAfterDiscount:C}</p>";
 
             body += $@"
-            <p><strong>{t(lang, "GrandTotal")}:</strong> {created.TotalAfterDiscount:C}</p>
-            <p>{t(lang, "ThankYou")}</p>";
+
+             <p><strong>{t(lang, "ImportantNotice")}:</strong></p>
+             <p>{t(lang, "OrderProcessedAfterPayment")}</p>
+             <p>{t(lang, "OrderCancelledIfNoPayment")}</p>
+             <p>{t(lang, "ThankYou")}</p>";
 
             await _emailService.SendEmailAsync(
                 to: customer.Email,
@@ -334,7 +333,6 @@ namespace OC.LUAC.ApiLayer.Controllers
                 attachmentName: $"Order {created.OrderNumber}.pdf"
             );
 
-            // record stock movement
             foreach (var oi in created.Items)
             {
                 await _stock.RecordStockChangeAsync(
@@ -346,6 +344,7 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, MapToDetailDto(created));
         }
+
 
 
 
@@ -376,7 +375,7 @@ namespace OC.LUAC.ApiLayer.Controllers
             var trackingText = (!string.IsNullOrEmpty(order.TrackingNumber) && !string.IsNullOrEmpty(order.TrackingUrl))
                 ? $"<p>{Localization.T(lang, "OrderShipped")} <br/>" +
                   $"{Localization.T(lang, "TrackingNumber")}: <b>{order.TrackingNumber}</b><br/>" +
-                  $"Track here: <a href='{order.TrackingUrl}' target='_blank'>{order.TrackingUrl}</a></p>"
+                  $"{Localization.T(lang, "TrackHere")}: <a href='{order.TrackingUrl}' target='_blank'>{order.TrackingUrl}</a></p>"
                 : !string.IsNullOrEmpty(order.TrackingNumber)
                     ? $"<p>{Localization.T(lang, "TrackingNumber")}: <b>{order.TrackingNumber}</b></p>"
                     : "<p>No tracking information provided.</p>";
@@ -396,14 +395,61 @@ namespace OC.LUAC.ApiLayer.Controllers
 
         }
 
-        [HttpPut("{id:int}/cancel")]
+
+        // Customer self-Cancel
+        [HttpPut("{id:int}/cancel-me")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> CancelMyOrder(int id)
+        {
+           
+            var idClaim = User.FindFirst("customerId")
+                         ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+
+            if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
+                return Unauthorized("No valid customer ID found in token.");
+
+            var order = await _orders.GetOrderByIdAsync(id);
+            if (order == null || order.CustomerId != customerId)
+                return NotFound("Order not found or not yours.");
+
+            if (order.Status == OrderStatus.Shipped)
+                return BadRequest("You cannot cancel an order that has already been shipped.");
+
+            var ok = await _orders.CancelOrderAsync(id);
+            if (!ok) return BadRequest("Cancellation failed.");
+
+            // Reload customer to avoid null reference when sending email
+            var customer = await _customers.GetCustomerByIdAsync(order.CustomerId.Value);
+            if (customer == null)
+                return NotFound("Customer not found.");
+
+            var lang = order.Language ?? "en";
+            var subject = $"{Localization.T(lang, "OrderCancelledSubject")} - {order.OrderNumber}";
+            var body = $@"
+        <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
+        <p>{Localization.T(lang, "OrderCancelledByCustomerBody")}</p>
+        <p>{Localization.T(lang, "ThankYou")}</p>";
+
+            await _emailService.SendEmailAsync(
+                to: customer.Email,
+                subject: subject,
+                body: body
+            );
+
+            return Ok(new { id, status = "Cancelled by Customer" });
+        }
+
+
+
+        //Cancel for admin(Payment)
+        [HttpPut("{id:int}/cancel-nopayment")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Cancel(int id)
+        public async Task<IActionResult> CancelForNoPayment(int id)
         {
             var ok = await _orders.CancelOrderAsync(id);
             if (!ok) return NotFound();
 
-            var order = await _orders.GetOrderByIdAsync(id, includeDeleted: true); 
+            var order = await _orders.GetOrderByIdAsync(id, includeDeleted: true);
             if (order == null) return NotFound("Order not found after cancellation.");
 
             var customer = await _customers.GetCustomerByIdAsync(order.CustomerId.Value);
@@ -412,9 +458,9 @@ namespace OC.LUAC.ApiLayer.Controllers
             var lang = order.Language ?? "en";
             var subject = $"{Localization.T(lang, "OrderCancelledSubject")} - {order.OrderNumber}";
             var body = $@"
-             <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
-             <p>{Localization.T(lang, "OrderCancelledBody")}</p>
-             <p>{Localization.T(lang, "ThankYou")}</p>";
+        <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
+        <p>{Localization.T(lang, "OrderCancelledNoPaymentBody")}</p>
+        <p>{Localization.T(lang, "ThankYou")}</p>";
 
             await _emailService.SendEmailAsync(
                 to: customer.Email,
@@ -422,8 +468,11 @@ namespace OC.LUAC.ApiLayer.Controllers
                 body: body
             );
 
-            return Ok(new { id, status = "Cancelled" });
+            return Ok(new { id, status = "Cancelled (No Payment)" });
         }
+
+
+
 
         [Authorize(Roles = "Admin")]
         [HttpGet("shipped")]
@@ -431,6 +480,49 @@ namespace OC.LUAC.ApiLayer.Controllers
         {
             var orders = await _orders.GetShippedOrdersAsync();
             return Ok(orders);
+        }
+
+
+        //Mark Paid
+        [HttpPut("{id:int}/mark-paid")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> MarkPaid(int id)
+        {
+
+            var order = await _orders.GetOrderByIdAsync(id);
+            if (order == null) return NotFound();
+
+            if (order.Status != OrderStatus.PendingPayment)
+                return BadRequest("Only pending payment orders can be marked as paid.");
+
+            order.Status = OrderStatus.Processing; // payment confirmed by admin goes into processing
+            await _orders.UpdateOrderAsync(order);
+
+
+            //Send Confirmation email to customer
+
+            var customer = await _customers.GetCustomerByIdAsync(order.CustomerId.Value);
+            if (customer == null) return NotFound("Customer not found.");
+            if (customer != null)
+            {
+                var lang = order.Language ?? "en";
+                var t = Localization.T;
+
+                var subject = $"{t(lang, "PaymentReceived")} - {order.OrderNumber}";
+                var body = $@"
+                <p>{t(lang, "Hello")} {customer.FirstName},</p>
+                <p>{t(lang, "PaymentReceivedMessage")}</p>
+                <p><strong>{t(lang, "OrderNumber")}:</strong> {order.OrderNumber}</p>
+                <p>{t(lang, "ThankYou")}</p>";
+
+                await _emailService.SendEmailAsync(
+                    to: customer.Email,
+                    subject: subject,
+                    body: body
+                );
+            }
+
+            return Ok(new { id = order.Id, status = "Paid" });
         }
 
 
