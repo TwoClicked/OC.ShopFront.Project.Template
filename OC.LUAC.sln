@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OC.LUAC.ServiceLayer", "OC.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OC.LUAC.ApiLayer", "OC.LUAC.ApiLayer\OC.LUAC.ApiLayer.csproj", "{1DB64F6F-C825-4248-9993-FD7B69633A8C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OC.LUAC.UiLayer", "OC.LUAC.UiLayer\OC.LUAC.UiLayer.csproj", "{1E832F55-CD54-42FC-A1C9-BC06466E8B0F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{1DB64F6F-C825-4248-9993-FD7B69633A8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DB64F6F-C825-4248-9993-FD7B69633A8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DB64F6F-C825-4248-9993-FD7B69633A8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E832F55-CD54-42FC-A1C9-BC06466E8B0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E832F55-CD54-42FC-A1C9-BC06466E8B0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E832F55-CD54-42FC-A1C9-BC06466E8B0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E832F55-CD54-42FC-A1C9-BC06466E8B0F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
