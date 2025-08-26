@@ -1,9 +1,7 @@
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using OC.LUAC.ApiLayer;
+using OC.LUAC.ApiLayer.Hubs;
 using OC.LUAC.ServiceLayer;
 using QuestPDF.Infrastructure;
 
@@ -27,6 +25,11 @@ builder.Services
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
+
+
+// SignalR
+builder.Services.AddSignalR();
+
 
 // Swagger (+ Bearer support)
 builder.Services.AddEndpointsApiExplorer();
@@ -76,4 +79,7 @@ app.UseAuthentication();   // must be before UseAuthorization
 app.UseAuthorization();
 
 app.MapControllers();
+
+//Map SignalR hub
+app.MapHub<ChatHub>("/chathub");
 app.Run();
