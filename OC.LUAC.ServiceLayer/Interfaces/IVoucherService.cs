@@ -9,5 +9,6 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         Task<Voucher> CreateVoucherAsync(Voucher voucher);
         Task<Voucher?> UpdateVoucherAsync(Voucher voucher);
         Task<bool> DeleteVoucherAsync(int id);
+        Task<Voucher?> GetVoucherByIdAsync(int id);
     }
 }

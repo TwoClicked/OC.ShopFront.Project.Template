@@ -86,7 +86,7 @@ namespace OC.LUAC.ServiceLayer.Services
         public async Task<Customer?> LoginAsync(string email, string password)
         {
             var user = await _context.Customers
-                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
+                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted && u.IsActive);
 
             if (user == null || !ValidatePassword(password, user.PasswordHash))
             {
@@ -171,6 +171,73 @@ namespace OC.LUAC.ServiceLayer.Services
             _context.Customers.Update(customer);
             await _context.SaveChangesAsync();
 
+            return true;
+        }
+
+        // ✅ Address CRUD
+        public async Task<List<Address>> GetAddressesByCustomerIdAsync(int customerId)
+        {
+            return await _context.Addresses
+                .Where(a => a.CustomerId == customerId && !a.IsDeleted)
+                .ToListAsync();
+        }
+
+        public async Task<Address?> AddAddressAsync(int customerId, Address address)
+        {
+            address.CustomerId = customerId;
+            address.CreatedAt = DateTime.UtcNow;
+            _context.Addresses.Add(address);
+            await _context.SaveChangesAsync();
+            return address;
+        }
+
+        public async Task<Address?> UpdateAddressAsync(Address address)
+        {
+            var existing = await _context.Addresses.FirstOrDefaultAsync(a => a.Id == address.Id && !a.IsDeleted);
+            if (existing == null) return null;
+
+            existing.Label = address.Label ?? existing.Label;
+            existing.Street = address.Street ?? existing.Street;
+            existing.Number = address.Number ?? existing.Number;
+            existing.PostalCode = address.PostalCode ?? existing.PostalCode;
+            existing.City = address.City ?? existing.City;
+            existing.Country = address.Country ?? existing.Country;
+
+            _context.Addresses.Update(existing);
+            await _context.SaveChangesAsync();
+            return existing;
+        }
+
+        public async Task<bool> DeleteAddressAsync(int addressId)
+        {
+            var existing = await _context.Addresses.FirstOrDefaultAsync(a => a.Id == addressId && !a.IsDeleted);
+            if (existing == null) return false;
+
+            existing.IsDeleted = true;
+            existing.DeletedAt = DateTime.UtcNow;
+            _context.Addresses.Update(existing);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // ✅ Admin controls
+        public async Task<bool> DeactivateCustomerAsync(int id)
+        {
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+            if (customer == null) return false;
+
+            customer.IsActive = false; // add IsActive column if not there
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ReactivateCustomerAsync(int id)
+        {
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+            if (customer == null) return false;
+
+            customer.IsActive = true;
+            await _context.SaveChangesAsync();
             return true;
         }
 

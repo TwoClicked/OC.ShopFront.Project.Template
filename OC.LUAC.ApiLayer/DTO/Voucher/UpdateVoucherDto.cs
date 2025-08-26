@@ -2,7 +2,7 @@
 
 namespace OC.LUAC.ApiLayer.DTO.Voucher
 {
-    public class CreateVoucherDto
+    public class UpdateVoucherDto
     {
         [Required]
         public string Code { get; set; } = string.Empty;
@@ -16,10 +16,10 @@ namespace OC.LUAC.ApiLayer.DTO.Voucher
         [Required]
         public DateTime EndDate { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; }
 
         public int? MaxUsageCount { get; set; }
 
-        public bool AppliesToShipping { get; set; } = false;
+        public bool AppliesToShipping { get; set; }
     }
 }

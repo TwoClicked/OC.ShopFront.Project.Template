@@ -29,6 +29,11 @@ namespace OC.LUAC.ObjectLayer.Accounts
         public DateTime CreatedAt { get; set; } = DateTime.Now; // Timestamp for when the customer was created
         public DateTime? LastLoginAt { get; set; } // Timestamp for the last login, nullable if never logged in
 
+
+
+        // Account status
+        public bool IsActive { get; set; } = true; // NEW - for admin suspend/reactivate
+
         // GDPR Soft delete support
 
         public bool IsDeleted { get; set; } = false; // Flag to indicate if the customer is deleted

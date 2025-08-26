@@ -1,5 +1,4 @@
-﻿using DiscordRPC;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OC.LUAC.ApiLayer.Auth;
 using OC.LUAC.ApiLayer.DTO.Customer;
@@ -83,6 +82,22 @@ public class CustomerController : ControllerBase
         return Ok(orders);
     }
 
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id:int}/deactivate")]
+    public async Task<IActionResult> DeactivateCustomer(int id)
+    {
+        var ok = await _customers.DeactivateCustomerAsync(id);
+        return ok ? Ok(new { status = "Deactivated" }) : NotFound();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id:int}/reactivate")]
+    public async Task<IActionResult> ReactivateCustomer(int id)
+    {
+        var ok = await _customers.ReactivateCustomerAsync(id);
+        return ok ? Ok(new { status = "Reactivated" }) : NotFound();
+    }
+
     // =========================
     // SELF-SERVICE ENDPOINTS
     // =========================
@@ -149,6 +164,51 @@ public class CustomerController : ControllerBase
             return Unauthorized();
 
         var success = await _customers.DeleteCustomerAsync(customerId);
+        return success ? Ok(new { status = "Deleted" }) : NotFound();
+    }
+
+    // =========================
+    // SELF-SERVICE: ADDRESSES
+    // =========================
+
+    [Authorize(Roles = "Customer")]
+    [HttpGet("me/addresses")]
+    public async Task<ActionResult<List<Address>>> GetAddresses()
+    {
+        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
+            return Unauthorized();
+
+        var addresses = await _customers.GetAddressesByCustomerIdAsync(customerId);
+        return Ok(addresses);
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpPost("me/addresses")]
+    public async Task<ActionResult<Address>> AddAddress([FromBody] Address address)
+    {
+        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
+            return Unauthorized();
+
+        var added = await _customers.AddAddressAsync(customerId, address);
+        return Ok(added);
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpPut("me/addresses/{id:int}")]
+    public async Task<ActionResult<Address>> UpdateAddress(int id, [FromBody] Address address)
+    {
+        address.Id = id;
+        var updated = await _customers.UpdateAddressAsync(address);
+        return updated == null ? NotFound() : Ok(updated);
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpDelete("me/addresses/{id:int}")]
+    public async Task<IActionResult> DeleteAddress(int id)
+    {
+        var success = await _customers.DeleteAddressAsync(id);
         return success ? Ok(new { status = "Deleted" }) : NotFound();
     }
 }

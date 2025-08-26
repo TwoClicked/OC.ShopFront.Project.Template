@@ -426,9 +426,9 @@ namespace OC.LUAC.ApiLayer.Controllers
             var lang = order.Language ?? "en";
             var subject = $"{Localization.T(lang, "OrderCancelledSubject")} - {order.OrderNumber}";
             var body = $@"
-        <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
-        <p>{Localization.T(lang, "OrderCancelledByCustomerBody")}</p>
-        <p>{Localization.T(lang, "ThankYou")}</p>";
+            <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
+            <p>{Localization.T(lang, "OrderCancelledByCustomerBody")}</p>
+            <p>{Localization.T(lang, "ThankYou")}</p>";
 
             await _emailService.SendEmailAsync(
                 to: customer.Email,
@@ -458,9 +458,9 @@ namespace OC.LUAC.ApiLayer.Controllers
             var lang = order.Language ?? "en";
             var subject = $"{Localization.T(lang, "OrderCancelledSubject")} - {order.OrderNumber}";
             var body = $@"
-        <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
-        <p>{Localization.T(lang, "OrderCancelledNoPaymentBody")}</p>
-        <p>{Localization.T(lang, "ThankYou")}</p>";
+            <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
+            <p>{Localization.T(lang, "OrderCancelledNoPaymentBody")}</p>
+            <p>{Localization.T(lang, "ThankYou")}</p>";
 
             await _emailService.SendEmailAsync(
                 to: customer.Email,

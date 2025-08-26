@@ -48,5 +48,10 @@ namespace OC.LUAC.ServiceLayer.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<Voucher?> GetVoucherByIdAsync(int id)
+        {
+           return await _context.Vouchers.FindAsync(id);
+        }
     }
 }

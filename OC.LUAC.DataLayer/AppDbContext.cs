@@ -179,6 +179,10 @@ namespace OC.LUAC.DataLayer
                 .HasForeignKey(c => c.ShippingZoneId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Voucher>()
+                .HasIndex(v => v.Code)
+                .IsUnique();
+
         }
 
     }
