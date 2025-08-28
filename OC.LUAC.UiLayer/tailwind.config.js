@@ -1,9 +1,10 @@
+/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
+    "./**/*.html",
     "./**/*.razor",
-    "./Pages/**/*.razor",
-    "./Shared/**/*.razor",
-    "./wwwroot/index.html"
+    "./**/*.cshtml",
+    "./**/*.razor.cs"
   ],
   theme: {
     extend: {},

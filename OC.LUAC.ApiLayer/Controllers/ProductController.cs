@@ -138,9 +138,20 @@ namespace OC.LUAC.ApiLayer.Controllers
                     ThumbnailUrl = firstImg?.ImageUrl,
                     IsFeatured = p.IsFeatured,
                     VariantCount = p.Variants?.Count ?? 0,
-                    TotalStock = p.Variants?.Sum(v => v.Stock) ?? 0
-                };
-            }).ToList();
+                    TotalStock = p.Variants?.Sum(v => v.Stock) ?? 0,
+
+                    Images = p.Images?
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => new ProductImageResponseDto
+                    {
+                        Id = i.Id,
+                        ProductId = i.ProductId,
+                        ImageUrl = i.ImageUrl,
+                        SortOrder = i.SortOrder
+                    })
+                    .ToList() ?? new List<ProductImageResponseDto>()
+                        };
+                    }).ToList();
 
             return Ok(list);
         }

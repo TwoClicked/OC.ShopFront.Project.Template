@@ -1,9 +1,95 @@
 ﻿@page "/"
+@using OC.LUAC.UiLayer.DTO.Products
+@inject HttpClient Http
 
-<div class="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center">
-    <h1 class="text-5xl font-bold mb-6">🎨 Tailwind is Working!</h1>
-    <p class="text-lg mb-8">If you see a dark background and styled button, it’s working ✅</p>
-    <button class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-full shadow-lg">
-        Test Button
-    </button>
+<div class="bg-neutral-900 text-white">
+
+    <!-- Category Highlights -->
+    <section class="py-16 px-6 md:px-12">
+        <h2 class="text-3xl font-bold mb-8 text-center">Shop by Category</h2>
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+
+                <!-- T-Shirts -->
+                <a href="/shop?category=tshirt"
+                   class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
+                    <img src="/images/category-tshirts.jpg"
+                         alt="T-Shirts"
+                         class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <span class="text-2xl font-bold text-white">T-Shirts</span>
+                    </div>
+                </a>
+
+                <!-- Pullovers -->
+                <a href="/shop?category=pullover"
+                   class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
+                    <img src="/images/category-pullovers.jpg"
+                         alt="Pullovers"
+                         class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <span class="text-2xl font-bold text-white">Pullovers</span>
+                    </div>
+                </a>
+
+                <!-- Accessories -->
+                <a href="/shop?category=accessoires"
+                   class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
+                    <img src="/images/category-accessoires.jpg"
+                         alt="Accessories"
+                         class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <span class="text-2xl font-bold text-white">Accessories</span>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Featured Products -->
+    <section class="py-16 px-6 md:px-12">
+        <h2 class="text-3xl font-bold mb-8 text-center">Featured Products</h2>
+
+        @if (featuredProducts == null)
+        {
+            <p class="text-center text-gray-400">Loading products...</p>
+        }
+        else if (!featuredProducts.Any())
+        {
+            <p class="text-center text-gray-400">No featured products found.</p>
+        }
+        else
+        {
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                    @foreach (var product in featuredProducts.Take(8))
+                    {
+                        <ProductCard Product="product" />
+                    }
+                </div>
+            </div>
+        }
+    </section>
+
+    <!-- Brand Statement -->
+    <section class="py-20 text-center px-6 md:px-24">
+        <div class="flex flex-col items-center">
+            <img src="/images/WHITE_LUAC.png" alt="LUAC Logo" class="h-24 mb-4" />
+            <p class="text-gray-300 max-w-2xl text-center">
+                Add your brand statement here?
+            </p>
+        </div>
+    </section>
 </div>
+
+@code {
+    private List<ProductDto>? featuredProducts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        featuredProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products/featured");
+    }
+}

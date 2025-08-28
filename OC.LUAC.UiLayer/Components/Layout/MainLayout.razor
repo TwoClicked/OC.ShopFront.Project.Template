@@ -1,10 +1,13 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="min-h-screen flex flex-col bg-gray-900 text-white">
+<div class="min-h-screen flex flex-col bg-neutral-900 text-white">
     <!-- Navbar -->
-    <header class="bg-gray-800 shadow-md">
+    <header class="bg-neutral-900 shadow-md">
         <nav class="container mx-auto flex justify-between items-center p-4">
-            <h1 class="text-2xl font-bold">LUAC</h1>
+            <a href="/" class="flex items-center">
+                <img src="/images/WHITE_LUAC.png" alt="LUAC Logo" class="h-24 w-auto" />
+            </a>
+
             <ul class="flex space-x-6">
                 <li><NavLink href="/" class="hover:text-indigo-400">Home</NavLink></li>
                 <li><NavLink href="/shop" class="hover:text-indigo-400">Shop</NavLink></li>
@@ -20,7 +23,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-center p-4 text-sm text-gray-400">
+    <footer class="bg-neutral-900 text-center p-4 text-sm text-gray-400">
         © @DateTime.Now.Year - LUAC. All rights reserved.
     </footer>
 </div>

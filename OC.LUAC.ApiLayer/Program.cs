@@ -4,6 +4,7 @@ using OC.LUAC.ApiLayer;
 using OC.LUAC.ApiLayer.Hubs;
 using OC.LUAC.ServiceLayer;
 using QuestPDF.Infrastructure;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,10 +27,8 @@ builder.Services
         o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
-
 // SignalR
 builder.Services.AddSignalR();
-
 
 // Swagger (+ Bearer support)
 builder.Services.AddEndpointsApiExplorer();
@@ -71,7 +70,25 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// ---- Static files ----
+// Default wwwroot
 app.UseStaticFiles();
+
+// Add /uploads folder explicitly
+var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
 app.UseCors("dev");
 
 // Auth pipeline
@@ -80,6 +97,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-//Map SignalR hub
+// Map SignalR hub
 app.MapHub<ChatHub>("/chathub");
+
 app.Run();
