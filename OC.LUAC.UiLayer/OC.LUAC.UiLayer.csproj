@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OC.LUAC.ApiLayer\OC.LUAC.ApiLayer.csproj" />
+    <ProjectReference Include="..\OC.LUAC.ObjectLayer\OC.LUAC.ObjectLayer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Update="wwwroot\images\category-accessoires.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

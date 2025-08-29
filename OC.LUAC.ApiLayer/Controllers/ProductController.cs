@@ -58,7 +58,18 @@ namespace OC.LUAC.ApiLayer.Controllers
                     ThumbnailUrl = firstImg?.ImageUrl,
                     IsFeatured = p.IsFeatured,
                     VariantCount = p.Variants?.Count ?? 0,
-                    TotalStock = p.Variants?.Sum(v => v.Stock) ?? 0
+                    TotalStock = p.Variants?.Sum(v => v.Stock) ?? 0,
+                    // Make sure it grabs all the images related to the product
+                    Images = p.Images?
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => new ProductImageResponseDto
+                    {
+                        Id = i.Id,
+                        ProductId = i.ProductId,
+                        ImageUrl = i.ImageUrl,
+                        SortOrder = i.SortOrder
+                    })
+                    .ToList() ?? new List<ProductImageResponseDto>()
                 });
             }
 
@@ -150,8 +161,8 @@ namespace OC.LUAC.ApiLayer.Controllers
                         SortOrder = i.SortOrder
                     })
                     .ToList() ?? new List<ProductImageResponseDto>()
-                        };
-                    }).ToList();
+                };
+            }).ToList();
 
             return Ok(list);
         }

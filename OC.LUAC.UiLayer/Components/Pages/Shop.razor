@@ -1,0 +1,155 @@
+﻿@page "/shop"
+@inject HttpClient Http
+@inject IConfiguration Config
+@inject NavigationManager Nav
+
+<section class="py-16 px-6 md:px-12">
+    <h2 class="text-3xl font-bold mb-8 text-center">Shop</h2>
+
+    <!-- Category Filter -->
+    <div class="flex justify-center gap-4 mb-8">
+        <button @onclick="() => SetCategory(null)"
+        class="@GetCategoryButtonClass(null)">
+            All
+        </button>
+        <button @onclick="() => SetCategory(1)"
+        class="@GetCategoryButtonClass(1)">
+            T-Shirts
+        </button>
+        <button @onclick="() => SetCategory(2)"
+        class="@GetCategoryButtonClass(2)">
+            Pullovers
+        </button>
+        <button @onclick="() => SetCategory(3)"
+        class="@GetCategoryButtonClass(3)">
+            Accessories
+        </button>
+    </div>
+
+    <!-- Products -->
+    @if (productsPage == null)
+    {
+        <p class="text-center">Loading products...</p>
+    }
+    else if (!productsPage.Items.Any())
+    {
+        <p class="text-center">No products found.</p>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            @foreach (var product in productsPage.Items)
+            {
+                <ProductCard Product="product" />
+            }
+        </div>
+    }
+
+    <!-- Pagination -->
+    <div class="flex justify-center mt-12 gap-4">
+        <button @onclick="PrevPage" disabled="@(currentPage == 1)"
+        class="px-4 py-2 bg-neutral-800 text-white rounded disabled:opacity-50">
+            Previous
+        </button>
+
+        <span class="px-4 py-2 bg-neutral-900 text-white rounded">
+            Page @currentPage of @TotalPages
+        </span>
+
+        <button @onclick="NextPage" disabled="@(currentPage == TotalPages)"
+        class="px-4 py-2 bg-neutral-800 text-white rounded disabled:opacity-50">
+            Next
+        </button>
+    </div>
+
+    <!-- Items per page -->
+    <div class="flex justify-center mt-6">
+        <label class="mr-2">Items per page:</label>
+        <select @onchange="ChangePageSize" class="bg-neutral-800 text-white rounded px-2 py-1">
+            <option value="8" selected>8</option>
+            <option value="12">12</option>
+            <option value="24">24</option>
+        </select>
+    </div>
+</section>
+
+@code {
+    private PagedResult<ProductDto>? productsPage;
+    private int currentPage = 1;
+    private int pageSize = 8;
+    private string sort = "newest";
+    private int? categoryId = null;
+
+    private int TotalPages =>
+        productsPage == null || productsPage.Total == 0
+            ? 1
+            : (int)Math.Ceiling(productsPage.Total / (double)pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        var url = $"products?page={currentPage}&pageSize={pageSize}&sort={sort}&dir=desc";
+        if (categoryId.HasValue)
+            url += $"&categoryId={categoryId}";
+
+        productsPage = await Http.GetFromJsonAsync<PagedResult<ProductDto>>(url);
+        Console.WriteLine($"Products loaded: {productsPage?.Items?.Count}");
+    }
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)
+            .TryGetValue("categoryId", out var catId))
+        {
+            categoryId = int.Parse(catId!);
+        }
+
+        _ = LoadProducts();
+    }
+
+
+    private async Task PrevPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            await LoadProducts();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (currentPage < TotalPages)
+        {
+            currentPage++;
+            await LoadProducts();
+        }
+    }
+
+    private async Task ChangePageSize(ChangeEventArgs e)
+    {
+        pageSize = int.Parse(e.Value?.ToString() ?? "8");
+        currentPage = 1;
+        await LoadProducts();
+    }
+
+    private async Task SetCategory(int? id)
+    {
+        categoryId = id;
+        currentPage = 1;
+        await LoadProducts();
+    }
+
+    private string GetCategoryButtonClass(int? id)
+    {
+        bool isActive = categoryId == id;
+        return isActive
+            ? "px-4 py-2 rounded bg-amber-600 text-white font-medium"
+            : "px-4 py-2 rounded bg-neutral-800 text-gray-200 hover:bg-neutral-700";
+    }
+}
