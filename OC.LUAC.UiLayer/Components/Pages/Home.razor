@@ -10,39 +10,29 @@
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
 
-                <!-- T-Shirts -->
-                <a href="/shop?categoryId=1"
-                   class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
-                    <img src="/images/category-tshirts.jpg"
-                         alt="T-Shirts"
+                <a href="/shop?categoryId=1" class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
+                    <img src="/images/category-tshirts.jpg" alt="T-Shirts"
                          class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                         <span class="text-2xl font-bold text-white">T-Shirts</span>
                     </div>
                 </a>
 
-                <!-- Pullovers -->
-                <a href="/shop?categoryId=2"
-                   class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
-                    <img src="/images/category-pullovers.jpg"
-                         alt="Pullovers"
+                <a href="/shop?categoryId=2" class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
+                    <img src="/images/category-pullovers.jpg" alt="Pullovers"
                          class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                         <span class="text-2xl font-bold text-white">Pullovers</span>
                     </div>
                 </a>
 
-                <!-- Accessories -->
-                <a href="/shop?categoryId=3"
-                   class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
-                    <img src="/images/category-accessoires.jpg"
-                         alt="Accessories"
+                <a href="/shop?categoryId=3" class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
+                    <img src="/images/category-accessoires.jpg" alt="Accessories"
                          class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                         <span class="text-2xl font-bold text-white">Accessories</span>
                     </div>
                 </a>
-
             </div>
         </div>
     </section>
@@ -65,7 +55,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     @foreach (var product in featuredProducts.Take(8))
                     {
-                        <ProductCard Product="product" />
+                        <ProductCard Product="product" Origin="home" />
                     }
                 </div>
             </div>

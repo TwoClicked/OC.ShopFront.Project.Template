@@ -8,11 +8,35 @@
                 <img src="/images/WHITE_LUAC.png" alt="LUAC Logo" class="h-24 w-auto" />
             </a>
 
-            <ul class="flex space-x-6">
-                <li><NavLink href="/" class="hover:text-indigo-400">Home</NavLink></li>
-                <li><NavLink href="/shop" class="hover:text-indigo-400">Shop</NavLink></li>
-                <li><NavLink href="/cart" class="hover:text-indigo-400">Cart</NavLink></li>
-                <li><NavLink href="/account" class="hover:text-indigo-400">Account</NavLink></li>
+            <ul class="flex space-x-4">
+                <li>
+                    <NavLink href="/" Match="NavLinkMatch.All"
+                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors shadow-md"
+                             activeClass="text-amber-600 font-medium">
+                        Home
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="/shop" Match="NavLinkMatch.Prefix"
+                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors"
+                             activeClass="text-amber-600 font-medium">
+                        Shop
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="/cart" Match="NavLinkMatch.Prefix"
+                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors"
+                             activeClass="text-amber-600 font-medium">
+                        Cart
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink href="/account" Match="NavLinkMatch.Prefix"
+                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors"
+                             activeClass="text-amber-600 font-medium">
+                        Account
+                    </NavLink>
+                </li>
             </ul>
         </nav>
     </header>

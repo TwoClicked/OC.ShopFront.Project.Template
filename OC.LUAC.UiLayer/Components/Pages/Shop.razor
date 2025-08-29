@@ -1,4 +1,6 @@
 ﻿@page "/shop"
+@using OC.LUAC.ApiLayer.DTO.Common
+@using Microsoft.AspNetCore.Components
 @inject HttpClient Http
 @inject IConfiguration Config
 @inject NavigationManager Nav
@@ -8,22 +10,10 @@
 
     <!-- Category Filter -->
     <div class="flex justify-center gap-4 mb-8">
-        <button @onclick="() => SetCategory(null)"
-        class="@GetCategoryButtonClass(null)">
-            All
-        </button>
-        <button @onclick="() => SetCategory(1)"
-        class="@GetCategoryButtonClass(1)">
-            T-Shirts
-        </button>
-        <button @onclick="() => SetCategory(2)"
-        class="@GetCategoryButtonClass(2)">
-            Pullovers
-        </button>
-        <button @onclick="() => SetCategory(3)"
-        class="@GetCategoryButtonClass(3)">
-            Accessories
-        </button>
+        <button @onclick="() => SetCategory(null)" class="@GetCategoryButtonClass(null)">All</button>
+        <button @onclick="() => SetCategory(1)" class="@GetCategoryButtonClass(1)">T-Shirts</button>
+        <button @onclick="() => SetCategory(2)" class="@GetCategoryButtonClass(2)">Pullovers</button>
+        <button @onclick="() => SetCategory(3)" class="@GetCategoryButtonClass(3)">Accessories</button>
     </div>
 
     <!-- Products -->
@@ -40,7 +30,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             @foreach (var product in productsPage.Items)
             {
-                <ProductCard Product="product" />
+                <ProductCard Product="product" Origin="shop" />
             }
         </div>
     }
@@ -48,7 +38,7 @@
     <!-- Pagination -->
     <div class="flex justify-center mt-12 gap-4">
         <button @onclick="PrevPage" disabled="@(currentPage == 1)"
-        class="px-4 py-2 bg-neutral-800 text-white rounded disabled:opacity-50">
+                class="px-4 py-2 bg-neutral-800 text-white rounded disabled:opacity-50">
             Previous
         </button>
 
@@ -57,7 +47,7 @@
         </span>
 
         <button @onclick="NextPage" disabled="@(currentPage == TotalPages)"
-        class="px-4 py-2 bg-neutral-800 text-white rounded disabled:opacity-50">
+                class="px-4 py-2 bg-neutral-800 text-white rounded disabled:opacity-50">
             Next
         </button>
     </div>
@@ -80,6 +70,10 @@
     private string sort = "newest";
     private int? categoryId = null;
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "categoryId")]
+    public int? CategoryIdFromQuery { get; set; }
+
     private int TotalPages =>
         productsPage == null || productsPage.Total == 0
             ? 1
@@ -87,31 +81,21 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (CategoryIdFromQuery.HasValue)
+        {
+            categoryId = CategoryIdFromQuery;
+        }
+
         await LoadProducts();
     }
 
     private async Task LoadProducts()
     {
         var url = $"products?page={currentPage}&pageSize={pageSize}&sort={sort}&dir=desc";
-        if (categoryId.HasValue)
-            url += $"&categoryId={categoryId}";
+        if (categoryId.HasValue) url += $"&categoryId={categoryId}";
 
         productsPage = await Http.GetFromJsonAsync<PagedResult<ProductDto>>(url);
-        Console.WriteLine($"Products loaded: {productsPage?.Items?.Count}");
     }
-
-    protected override void OnInitialized()
-    {
-        var uri = Nav.ToAbsoluteUri(Nav.Uri);
-        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)
-            .TryGetValue("categoryId", out var catId))
-        {
-            categoryId = int.Parse(catId!);
-        }
-
-        _ = LoadProducts();
-    }
-
 
     private async Task PrevPage()
     {
@@ -142,6 +126,13 @@
     {
         categoryId = id;
         currentPage = 1;
+
+        // Update the query string so refresh keeps the filter
+        var uri = id.HasValue
+            ? $"/shop?categoryId={id}"
+            : "/shop";
+        Nav.NavigateTo(uri, forceLoad: false);
+
         await LoadProducts();
     }
 
