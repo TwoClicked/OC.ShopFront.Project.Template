@@ -1,7 +1,17 @@
 using OC.LUAC.UiLayer.Components;
+using OC.LUAC.UiLayer.Services;
+using Blazored.LocalStorage;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<ShippingService>();
+
+
+
 
 // ---- HttpClient Setup ----
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"];

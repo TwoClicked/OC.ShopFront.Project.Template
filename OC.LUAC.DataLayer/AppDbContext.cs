@@ -6,55 +6,33 @@ using OC.LUAC.ObjectLayer.Orders;
 
 namespace OC.LUAC.DataLayer
 {
-    /// <summary>
-    /// Represents the application database context for Entity Framework Core.
-    /// </summary>
     public class AppDbContext : DbContext
     {
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AppDbContext"/> class with the specified options.
-        /// </summary>
-        /// <param name="options"></param>
-        public AppDbContext(DbContextOptions<AppDbContext> options)
-            : base(options)
-        {
-        }
-
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         // Accounts
-
-        public DbSet<Customer> Customers { get; set; } // Represents the Customers table in the database
-        public DbSet<AdminUser> AdminUsers { get; set; } // Represents the AdminUsers table in the database
-        public DbSet<Address> Addresses { get; set; } // Represents the Addresses table in the database
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<AdminUser> AdminUsers { get; set; }
+        public DbSet<Address> Addresses { get; set; }
 
         // Products
-
-        public DbSet<Category> Categories { get; set; } // Represents the Categories table in the database
-        public DbSet<Product> Products { get; set; } // Represents the Products table in the database
-        public DbSet<ProductImage> ProductImages { get; set; } // Represents the ProductImages table in the database
-        public DbSet<ProductVariant> ProductVariants { get; set; } // Represents the ProductVariants table in the database
-        public DbSet<StockAction> StockActions { get; set; } // Represents the StockActions table in the database
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
+        public DbSet<ProductVariant> ProductVariants { get; set; }
+        public DbSet<StockAction> StockActions { get; set; }
 
         // Orders
-
-        public DbSet<Order> Orders { get; set; } // Represents the Orders table in the database
-        public DbSet<OrderItem> OrderItems { get; set; } // Represents the OrderItems table in the database
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Voucher> Vouchers { get; set; }
         public DbSet<ShippingZone> ShippingZones { get; set; }
         public DbSet<ShippingZoneCountry> ShippingZoneCountries { get; set; }
 
-
         // Chat
+        public DbSet<ChatSession> ChatSessions { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
 
-        public DbSet<ChatSession> ChatSessions { get; set; } // Represents the ChatSessions table in the database
-        public DbSet<ChatMessage> ChatMessages { get; set; } // Represents the ChatMessages table in the database
-
-
-        /// <summary>
-        /// Configures the model for the application database context.
-        /// </summary>
-        /// <param name="modelBuilder"></param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -152,7 +130,7 @@ namespace OC.LUAC.DataLayer
                 .HasForeignKey(cs => cs.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Precision rules
+            // ---------- Precision rules ----------
             modelBuilder.Entity<Product>()
                 .Property(p => p.Price)
                 .HasPrecision(18, 2);
@@ -173,17 +151,50 @@ namespace OC.LUAC.DataLayer
                 .Property(o => o.DiscountAmount)
                 .HasPrecision(18, 2);
 
+            // NEW: shipping/totals missing precision
+            modelBuilder.Entity<Order>()
+                .Property(o => o.ShippingCost)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<ShippingZone>()
+                .Property(z => z.BaseCost)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<ShippingZone>()
+                .Property(z => z.FreeShippingThreshold)
+                .HasPrecision(18, 2);
+
+            // (Optional) voucher precision to silence warnings
+            modelBuilder.Entity<Voucher>()
+                .Property(v => v.FixedAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Voucher>()
+                .Property(v => v.Percentage)
+                .HasPrecision(5, 2);
+
+            // ---------- Relationships ----------
             modelBuilder.Entity<ShippingZoneCountry>()
                 .HasOne(c => c.ShippingZone)
                 .WithMany(z => z.Countries)
                 .HasForeignKey(c => c.ShippingZoneId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // NEW: prevent duplicate country in the same zone
+            modelBuilder.Entity<ShippingZoneCountry>()
+                .HasIndex(x => new { x.ShippingZoneId, x.CountryCode })
+                .IsUnique();
+
             modelBuilder.Entity<Voucher>()
                 .HasIndex(v => v.Code)
                 .IsUnique();
 
+            modelBuilder.Entity<ShippingZoneCountry>()
+                .Property(c => c.CountryCode)
+                .HasMaxLength(100);
+            modelBuilder.Entity<ShippingZoneCountry>()
+                .Property(c => c.CountryName)
+                .HasMaxLength(100);
         }
-
     }
 }

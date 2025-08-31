@@ -1,8 +1,11 @@
 ﻿@page "/product/{Id:int}"
+@using OC.LUAC.UiLayer.DTO.Cart
 @using OC.LUAC.UiLayer.DTO.Products
+@using OC.LUAC.UiLayer.Services
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IConfiguration Config
+@inject CartService CartService
 
 <div class="bg-neutral-900 text-white min-h-screen py-16 px-6 md:px-12">
     @if (product == null)
@@ -20,8 +23,14 @@
 
                 @if (product.Images.Count > 1)
                 {
-                    <button @onclick="PrevImage" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full">◀</button>
-                    <button @onclick="NextImage" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full">▶</button>
+                    <button @onclick="PrevImage"
+                            class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full">
+                        ◀
+                    </button>
+                    <button @onclick="NextImage"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full">
+                        ▶
+                    </button>
                 }
             </div>
 
@@ -32,12 +41,14 @@
                 <p class="text-gray-300 mb-6">@product.Description_En</p>
 
                 <h3 class="font-semibold mb-2">Available Sizes</h3>
-                <div class="flex gap-2 mb-4">
+                <div class="flex gap-2 mb-2">
                     @foreach (var variant in product.Variants)
                     {
                         <button @onclick="() => SelectSize(variant)"
+                                disabled="@(variant.Id == 0 || variant.Stock == 0)"
                                 class="px-4 py-2 border rounded
-                                       @(selectedSize == variant.Size ? "bg-amber-600 text-white" : "bg-neutral-800 text-white")">
+                                       @(selectedSize == variant.Size ? "bg-amber-600 text-white" : "bg-neutral-800 text-white")
+                                       @(variant.Id == 0 || variant.Stock == 0 ? "opacity-40 cursor-not-allowed" : "")">
                             @variant.Size
                         </button>
                     }
@@ -45,14 +56,31 @@
 
                 @if (selectedVariant != null)
                 {
-                    <p class="text-sm text-neutral-50">
-                        @(selectedVariant.Stock > 0 ? $"Stock: {selectedVariant.Stock}" : "Out of stock")
+                    <p class="text-sm mb-4 @(selectedVariant.Stock > 0 ? "text-amber-600" : "text-red-500")">
+                        @(selectedVariant.Stock > 0 ? "In stock" : "Out of stock")
                     </p>
                 }
 
-                <div class="mt-6 flex gap-4">
+                <!-- Quantity -->
+                @if (selectedVariant != null && selectedVariant.Stock > 0)
+                {
+                    <div class="flex items-center gap-6 mb-6">
+                        <label class="text-sm text-gray-300">Quantity</label>
+                        <input type="number" min="1"
+                               class="w-20 text-center bg-neutral-800 border border-neutral-700 mr-4"
+                               value="@qty" @oninput="OnQtyInput" />
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(message))
+                {
+                    <p class="text-sm @(messageIsError ? "text-red-500" : "text-amber-500") mb-2">@message</p>
+                }
+
+                <div class="mt-2 flex gap-4">
                     <button class="px-6 py-3 bg-amber-600 text-white rounded disabled:opacity-50"
-                            disabled="@(selectedVariant == null || selectedVariant.Stock == 0)">
+                            disabled="@(selectedVariant == null || selectedVariant.Id == 0 || selectedVariant.Stock == 0)"
+                            @onclick="AddToCart">
                         Add to Cart
                     </button>
 
@@ -69,8 +97,7 @@
 @code {
     [Parameter] public int Id { get; set; }
 
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "origin")]
+    [Parameter, SupplyParameterFromQuery(Name = "origin")]
     public string Origin { get; set; } = "home";
 
     private ProductDetailsDto? product;
@@ -80,22 +107,32 @@
     private string? selectedSize;
     private ProductVariantDto? selectedVariant;
 
+    private int qty = 1;
+    private string? message;
+    private bool messageIsError;
+
     protected override async Task OnInitializedAsync()
     {
         product = await Http.GetFromJsonAsync<ProductDetailsDto>($"products/{Id}");
 
         if (product != null)
         {
+            // All possible sizes
             var allSizes = new[] { "XS", "S", "M", "L", "XL", "XXL" };
-            foreach (var size in allSizes)
-            {
-                if (!product.Variants.Any(v => v.Size == size))
-                    product.Variants.Add(new ProductVariantDto { Size = size, Stock = 0 });
-            }
 
-            product.Variants = product.Variants
-                .OrderBy(v => Array.IndexOf(allSizes, v.Size))
-                .ToList();
+            // Build UI sizes by joining DB variants with full size list
+            var sizeOptions = allSizes.Select(size =>
+            {
+                var real = product.Variants.FirstOrDefault(v => v.Size == size);
+                return new ProductVariantDto
+                    {
+                        Id = real?.Id ?? -1,   // ✅ mark missing with -1, not 0
+                        Size = size,
+                        Stock = real?.Stock ?? 0
+                    };
+            }).ToList();
+
+            product.Variants = sizeOptions;
 
             if (product.Images.Any())
                 currentImage = Config["ApiBaseUrl"].TrimEnd('/') + product.Images.First().ImageUrl;
@@ -108,9 +145,16 @@
 
     private void SelectSize(ProductVariantDto variant)
     {
+        if (variant.Id <= 0) return; 
+
         selectedSize = variant.Size;
         selectedVariant = variant;
+        message = null;
+
+        if (selectedVariant.Stock > 0 && qty > selectedVariant.Stock)
+            qty = selectedVariant.Stock;
     }
+
 
     private void PrevImage()
     {
@@ -132,5 +176,61 @@
             Nav.NavigateTo("/shop");
         else
             Nav.NavigateTo("/");
+    }
+
+    private void IncQty()
+    {
+        if (selectedVariant == null) { qty++; return; }
+        if (qty < selectedVariant.Stock) qty++;
+    }
+
+    private void DecQty()
+    {
+        if (qty > 1) qty--;
+    }
+
+    private void OnQtyInput(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var v)) v = 1;
+        if (v < 1) v = 1;
+        if (selectedVariant != null && v > selectedVariant.Stock) v = selectedVariant.Stock;
+        qty = v;
+    }
+
+    private async Task AddToCart()
+    {
+        if (product == null || selectedVariant == null || selectedVariant.Id <= 0)
+            return; 
+
+        if (selectedVariant.Stock <= 0)
+        {
+            messageIsError = true;
+            message = "Out of stock";
+            return;
+        }
+
+        if (qty > selectedVariant.Stock)
+        {
+            messageIsError = true;
+            message = $"Only {selectedVariant.Stock} left in stock.";
+            qty = selectedVariant.Stock;
+            return;
+        }
+
+        var added = await CartService.AddOrIncrease(new CartItemDto
+            {
+                ProductId = product.Id,
+                ProductVariantId = selectedVariant.Id,
+                ProductName = product.Name_En,
+                Size = selectedVariant.Size,
+                Price = product.Price,
+                Quantity = qty,
+                MaxStock = selectedVariant.Stock,
+                ThumbnailUrl = product.ThumbnailUrl
+            });
+
+        messageIsError = !added;
+        message = added ? "Added to cart." : "Could not add item (quantity would exceed stock).";
+        StateHasChanged();
     }
 }

@@ -241,6 +241,17 @@ namespace OC.LUAC.ServiceLayer.Services
             return true;
         }
 
+        public async Task<Customer?> GetCustomerByEmailAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return null;
+
+            var normalized = email.Trim().ToLowerInvariant();
+            return await _context.Customers
+                .FirstOrDefaultAsync(c => c.Email == normalized && !c.IsDeleted);
+        }
+
+
 
         /// <summary>
         /// Hashes a plain-text password using SHA-256 and returns the hashed value as a Base64 string.

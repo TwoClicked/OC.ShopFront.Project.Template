@@ -1,0 +1,295 @@
+﻿@page "/checkout"
+@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@using OC.LUAC.UiLayer.Services
+@using OC.LUAC.UiLayer.DTO.Checkout
+@using OC.LUAC.ApiLayer.DTO.Shipping   <!-- CountryDto lives here -->
+@inject CartService Cart
+@inject OrderService Orders
+@inject ShippingService Shipping
+@inject NavigationManager Nav
+
+<section class="py-16 px-6 md:px-12 text-white">
+    <h2 class="text-3xl font-bold mb-10 text-center">Checkout</h2>
+
+    @if (!Cart.Items.Any())
+    {
+        <p class="text-center text-gray-400">Your cart is empty.</p>
+        <div class="text-center mt-6">
+            <a href="/shop" class="px-5 py-3 bg-amber-600 rounded hover:bg-amber-700">Back to shop</a>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 max-w-7xl mx-auto">
+            <!-- Left: Addresses -->
+            <div class="lg:col-span-2 space-y-10">
+                <EditForm Model="@vm" OnValidSubmit="@Submit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-red-400 mb-4" />
+
+                    <!-- Shipping -->
+                    <div class="bg-neutral-800 rounded-xl p-6">
+                        <h3 class="text-xl font-semibold mb-4">Shipping Address</h3>
+                        @AddressForm(vm.Shipping, "shipping")
+                    </div>
+
+                    <!-- Billing same as shipping -->
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" class="accent-amber-600" @bind="vm.BillingSameAsShipping" />
+                        <label>Billing address is the same as shipping</label>
+                    </div>
+
+                    <!-- Billing -->
+                    @if (!vm.BillingSameAsShipping)
+                    {
+                        <div class="bg-neutral-800 rounded-xl p-6">
+                            <h3 class="text-xl font-semibold mb-4">Billing Address</h3>
+                            @AddressForm(vm.Billing, "billing")
+                        </div>
+                    }
+
+                    <!-- Place order -->
+                    <button type="submit"
+                            class="px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700">
+                        Place Order
+                    </button>
+
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="mt-4 text-red-400">@error</div>
+                    }
+                </EditForm>
+            </div>
+
+            <!-- Right: Order Summary -->
+            <div>
+                <div class="bg-neutral-800 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold mb-4">Order Summary</h3>
+
+                    <ul class="divide-y divide-neutral-700">
+                        @foreach (var x in Cart.Items)
+                        {
+                            <li class="py-3 flex items-center gap-3">
+                                @if (!string.IsNullOrWhiteSpace(x.ThumbnailUrl))
+                                {
+                                    <img src="@x.ThumbnailUrl" class="w-14 h-14 object-cover rounded" />
+                                }
+                                <div class="flex-1">
+                                    <div class="font-medium">@x.ProductName</div>
+                                    <div class="text-sm text-gray-400">Size: @x.Size</div>
+                                    <div class="text-sm text-gray-400">Qty: @x.Quantity</div>
+                                </div>
+                                <div class="text-sm">@((x.Price * x.Quantity).ToString("C"))</div>
+                            </li>
+                        }
+                    </ul>
+
+                    <!-- Shipping line -->
+                    <div class="border-t border-neutral-700 mt-4 pt-4 flex justify-between">
+                        <span class="font-semibold">Shipping</span>
+
+                        @if (quote is null)
+                        {
+                            <span class="text-gray-400">—</span>
+                        }
+                        else if (quote.IsFree)
+                        {
+                            <span class="text-amber-500">Free</span>
+                        }
+                        else
+                        {
+                            <span>@quote.ShippingCost.ToString("C")</span>
+                        }
+                    </div>
+
+                    <!-- Grand total -->
+                    <div class="flex justify-between font-semibold border-t border-neutral-700 pt-2">
+                        <span>Total</span>
+                        <span class="text-amber-600">@GrandTotal.ToString("C")</span>
+                    </div>
+
+                    @if (quote is not null && !quote.IsFree)
+                    {
+                        <p class="text-xs text-gray-400 mt-2">
+                            Free shipping from @quote.FreeShippingThreshold.ToString("C").
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    private CheckoutVm vm = new();
+    private string? error;
+    private ShippingQuote? quote;
+
+    private decimal CartSubtotal => Cart.GetTotal();
+    private decimal GrandTotal => CartSubtotal + (quote?.ShippingCost ?? 0);
+
+    private List<CountryDto> Countries = new();
+
+    // backing field + property to auto-trigger UpdateQuote()
+    private string _selectedCountry = "";
+    private string SelectedCountry
+    {
+        get => _selectedCountry;
+        set
+        {
+            _selectedCountry = value;
+            vm.Shipping.Country = value;
+            _ = UpdateQuote(); // fire & forget
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Countries = await Shipping.GetCountriesAsync();
+
+            if (!string.IsNullOrWhiteSpace(vm.Shipping.Country))
+                await UpdateQuote();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Failed to load countries: " + ex.Message);
+        }
+    }
+
+    private async Task Submit()
+    {
+        error = null;
+
+        var oos = Cart.Items.FirstOrDefault(i => i.MaxStock <= 0 || i.Quantity > i.MaxStock);
+        if (oos is not null)
+        {
+            error = $"'{oos.ProductName}' is out of stock or exceeds available quantity.";
+            return;
+        }
+
+        await UpdateQuote();
+        if (quote is null)
+        {
+            error = "Please select a valid country.";
+            return;
+        }
+
+        var payload = new CheckoutRequestDto
+                {
+                    Shipping = vm.Shipping,
+                    Billing = vm.BillingSameAsShipping ? null : vm.Billing,
+                    Items = Cart.Items.Select(i => new CheckoutItemDto
+                    {
+                        ProductId = i.ProductId,
+                        ProductVariantId = i.ProductVariantId,
+                        Size = i.Size,
+                        Price = i.Price,
+                        Quantity = i.Quantity
+                    }).ToList()
+                };
+
+        try
+        {
+            var resp = await Orders.PlaceOrderAsync(payload);
+            await Cart.ClearCart();
+            Nav.NavigateTo($"/thank-you/{Uri.EscapeDataString(resp.OrderId)}");
+        }
+        catch (Exception ex)
+        {
+            error = "Could not place order. Please try again, make sure all fields marked with * are filled!";
+            Console.WriteLine("❌ " + ex.Message);
+        }
+    }
+
+    private async Task UpdateQuote()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(vm.Shipping.Country))
+            {
+                quote = null;
+                return;
+            }
+
+            quote = await Shipping.GetQuoteAsync(vm.Shipping.Country, CartSubtotal);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Failed to load shipping quote: " + ex.Message);
+            quote = null;
+        }
+    }
+
+    private class CheckoutVm
+    {
+        public AddressDto Shipping { get; set; } = new();
+        public AddressDto Billing { get; set; } = new();
+        public bool BillingSameAsShipping { get; set; } = true;
+    }
+
+    private RenderFragment AddressForm(AddressDto model, string idPrefix) => @<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label class="block mb-1">First name*</label>
+            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                       @bind-Value="model.FirstName" id="@($"{idPrefix}-first")" />
+            <ValidationMessage For="@(() => model.FirstName)" />
+        </div>
+        <div>
+            <label class="block mb-1">Last name*</label>
+            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                       @bind-Value="model.LastName" id="@($"{idPrefix}-last")" />
+            <ValidationMessage For="@(() => model.LastName)" />
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block mb-1">Email*</label>
+            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                       @bind-Value="model.Email" id="@($"{idPrefix}-email")" />
+            <ValidationMessage For="@(() => model.Email)" />
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block mb-1">Address line 1*</label>
+            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                       @bind-Value="model.Line1" id="@($"{idPrefix}-line1")" />
+            <ValidationMessage For="@(() => model.Line1)" />
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block mb-1">Address line 2 (optional)</label>
+            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                       @bind-Value="model.Line2" id="@($"{idPrefix}-line2")" />
+        </div>
+
+        <div>
+            <label class="block mb-1">City*</label>
+            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                       @bind-Value="model.City" id="@($"{idPrefix}-city")" />
+            <ValidationMessage For="@(() => model.City)" />
+        </div>
+        <div>
+            <label class="block mb-1">Postal code*</label>
+            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                       @bind-Value="model.PostalCode" id="@($"{idPrefix}-postal")" />
+            <ValidationMessage For="@(() => model.PostalCode)" />
+        </div>
+
+        <!-- ✅ Dropdown for country -->
+        <div class="md:col-span-2">
+            <label class="block mb-1">Country*</label>
+            <InputSelect class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                         @bind-Value="SelectedCountry">
+                <option value="">-- Select Country --</option>
+                @foreach (var c in Countries)
+            {
+                <option value="@c.Code">@c.Name</option>
+            }
+            </InputSelect>
+            <ValidationMessage For="@(() => model.Country)" />
+        </div>
+    </div>;
+}

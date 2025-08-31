@@ -1,113 +1,120 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// ServiceLayer/Services/ShippingZoneService.cs
+using Microsoft.EntityFrameworkCore;
 using OC.LUAC.DataLayer;
 using OC.LUAC.ObjectLayer.Orders;
 using OC.LUAC.ServiceLayer.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace OC.LUAC.ServiceLayer.Services
+public class ShippingZoneService : IShippingZoneService
 {
-    public class ShippingZoneService : IShippingZoneService
+    private readonly AppDbContext _context;
+    public ShippingZoneService(AppDbContext context) => _context = context;
+
+    public async Task<List<ShippingZone>> GetAllZonesAsync() =>
+        await _context.ShippingZones.Include(z => z.Countries).OrderBy(z => z.Name).ToListAsync();
+
+    public async Task<ShippingZone?> GetZoneByIdAsync(int id) =>
+        await _context.ShippingZones.Include(z => z.Countries).FirstOrDefaultAsync(z => z.Id == id);
+
+    public async Task<ShippingZone?> GetZoneByCountryAsync(string countryCode)
     {
-
-        private readonly AppDbContext _context;
-
-
-        public ShippingZoneService(AppDbContext context)
-        {
-            _context = context;
-        }
-
-
-        /// <summary>
-        /// Creates a Shipping fee zone
-        /// </summary>
-        /// <param name="zone"></param>
-        /// <returns></returns>
-        public async Task<ShippingZone> CreateZoneAsync(ShippingZone zone)
-        {
-            _context.ShippingZones.Add(zone);
-            await _context.SaveChangesAsync();
-            return zone;
-        }
-
-        /// <summary>
-        /// Deletes a Zone(Admin)
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public async Task<bool> DeleteZoneAsync(int id)
-        {
-            var zone = await _context.ShippingZones.FindAsync(id);
-            if (zone == null) return false;
-
-            _context.ShippingZones.Remove(zone);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-        /// <summary>
-        /// Get all zones in DB
-        /// </summary>
-        /// <returns></returns>
-        public async Task<List<ShippingZone>> GetAllZonesAsync()
-        {
-            return await _context.ShippingZones
-            .Include(z => z.Countries)
-            .ToListAsync();
-        }
-        /// <summary>
-        /// Get Zone by country 
-        /// </summary>
-        /// <param name="country"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public async Task<ShippingZone?> GetZoneByCountryAsync(string countryCode)
-        {
-            countryCode = countryCode.ToUpperInvariant();
-
-            // First look for a zone that explicitlyu has the country
-            var zone = await _context.ShippingZoneCountries
-                .Include(c => c.ShippingZone)
-                .Where(c => c.CountryCode == countryCode)
-                .Select(c => c.ShippingZone)
-                .FirstOrDefaultAsync();
-
-            if (zone != null)
-            {
-                return zone;
-            }
-
-            // Fallback: default zone
-            return await _context.ShippingZones
-                .FirstOrDefaultAsync(z => z.IsDefault);
-        }
-
-        /// <summary>
-        /// Get zone by ID
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public async Task<ShippingZone?> GetZoneByIdAsync(int id)
-        {
+        countryCode = (countryCode ?? "").Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(countryCode))
             return await _context.ShippingZones
                 .Include(z => z.Countries)
-                .FirstOrDefaultAsync(z => z.Id == id);
-        }
+                .FirstOrDefaultAsync(z => z.IsDefault);
+
+        var zone = await _context.ShippingZones
+            .Include(z => z.Countries)
+            .FirstOrDefaultAsync(z => z.Countries.Any(c => c.CountryCode == countryCode));
+
+        return zone ?? await _context.ShippingZones
+            .Include(z => z.Countries)
+            .FirstOrDefaultAsync(z => z.IsDefault);
+    }
 
 
-        /// <summary>
-        /// Updates a current zone
-        /// </summary>
-        /// <param name="zone"></param>
-        /// <returns></returns>
-        public async Task<ShippingZone> UpdateZoneAsync(ShippingZone zone)
+    public async Task<ShippingZone> CreateZoneAsync(ShippingZone zone)
+    {
+        // Ensure only one default
+        if (zone.IsDefault)
+            foreach (var other in _context.ShippingZones.Where(z => z.IsDefault))
+                other.IsDefault = false;
+
+        // Normalize country codes
+        if (zone.Countries != null)
         {
-            _context.ShippingZones.Update(zone);
-            await _context.SaveChangesAsync();
-            return zone;
+            foreach (var c in zone.Countries)
+                c.CountryCode = (c.CountryCode ?? "").Trim().ToUpperInvariant();
         }
+
+        _context.ShippingZones.Add(zone);
+        await _context.SaveChangesAsync();
+        return zone;
+    }
+
+    public async Task<ShippingZone> UpdateZoneAsync(ShippingZone zone)
+    {
+        var existing = await _context.ShippingZones
+            .Include(z => z.Countries)
+            .FirstOrDefaultAsync(z => z.Id == zone.Id);
+
+        if (existing == null) throw new KeyNotFoundException("Zone not found.");
+
+        existing.Name = zone.Name;
+        existing.BaseCost = zone.BaseCost;
+        existing.FreeShippingThreshold = zone.FreeShippingThreshold;
+
+        if (zone.IsDefault && !existing.IsDefault)
+        {
+            foreach (var other in _context.ShippingZones.Where(z => z.IsDefault))
+                other.IsDefault = false;
+            existing.IsDefault = true;
+        }
+        else if (!zone.IsDefault && existing.IsDefault)
+        {
+            existing.IsDefault = false;
+        }
+
+        await _context.SaveChangesAsync();
+        return existing;
+    }
+
+    public async Task<bool> DeleteZoneAsync(int id)
+    {
+        var zone = await _context.ShippingZones.Include(z => z.Countries).FirstOrDefaultAsync(z => z.Id == id);
+        if (zone == null) return false;
+
+        _context.ShippingZones.Remove(zone);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    // NEW: replace country mapping atomically
+    public async Task SetCountriesAsync(int zoneId, IEnumerable<string> countryCodes)
+    {
+        var zone = await _context.ShippingZones.Include(z => z.Countries).FirstOrDefaultAsync(z => z.Id == zoneId);
+        if (zone == null) throw new KeyNotFoundException("Zone not found.");
+
+        var codes = countryCodes
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Select(c => c.Trim().ToUpperInvariant())
+            .Distinct()
+            .ToList();
+
+        _context.ShippingZoneCountries.RemoveRange(zone.Countries);
+        await _context.SaveChangesAsync();
+
+        foreach (var code in codes)
+            _context.ShippingZoneCountries.Add(new ShippingZoneCountry { ShippingZoneId = zoneId, CountryCode = code });
+
+        await _context.SaveChangesAsync();
+    }
+
+    // NEW: set one default
+    public async Task SetDefaultAsync(int zoneId)
+    {
+        foreach (var z in _context.ShippingZones)
+            z.IsDefault = z.Id == zoneId;
+        await _context.SaveChangesAsync();
     }
 }

@@ -16,5 +16,7 @@ namespace OC.LUAC.ServiceLayer.Interfaces
         Task<ShippingZone> CreateZoneAsync(ShippingZone zone);
         Task<ShippingZone> UpdateZoneAsync(ShippingZone zone);
         Task<bool> DeleteZoneAsync(int id);
+        Task SetCountriesAsync(int zoneId, IEnumerable<string> countryCodes);
+        Task SetDefaultAsync(int zoneId);
     }
 }

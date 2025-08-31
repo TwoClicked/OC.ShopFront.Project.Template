@@ -1,14 +1,15 @@
 ﻿@inherits LayoutComponentBase
+@inject OC.LUAC.UiLayer.Services.CartService CartService
 
 <div class="min-h-screen flex flex-col bg-neutral-900 text-white">
     <!-- Navbar -->
     <header class="bg-neutral-900 shadow-md">
-        <nav class="container mx-auto flex justify-between items-center p-4">
+        <nav class="container mx-auto flex justify-between items-center p-4 relative">
             <a href="/" class="flex items-center">
                 <img src="/images/WHITE_LUAC.png" alt="LUAC Logo" class="h-24 w-auto" />
             </a>
 
-            <ul class="flex space-x-4">
+            <ul class="flex space-x-4 items-center">
                 <li>
                     <NavLink href="/" Match="NavLinkMatch.All"
                              class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors shadow-md"
@@ -23,13 +24,22 @@
                         Shop
                     </NavLink>
                 </li>
-                <li>
+
+                <li class="relative">
                     <NavLink href="/cart" Match="NavLinkMatch.Prefix"
-                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors"
-                             activeClass="text-amber-600 font-medium">
+                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-00 transition-colors"
+                             activeClass="text-amber-600 font-semibold">
                         Cart
                     </NavLink>
+
+                    @if (CartService.Items.Any())
+                    {
+                        <span class="absolute -top-2 -right-2 bg-amber-600 text-xs font-bold px-2 py-1 rounded-full">
+                            @CartService.Items.Sum(i => i.Quantity)
+                        </span>
+                    }
                 </li>
+
                 <li>
                     <NavLink href="/account" Match="NavLinkMatch.Prefix"
                              class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors"
@@ -51,3 +61,19 @@
         © @DateTime.Now.Year - LUAC. All rights reserved.
     </footer>
 </div>
+
+@code {
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            await CartService.InitializeAsync();
+            CartService.OnChange += StateHasChanged;
+            _initialized = true;
+
+            StateHasChanged(); // force refresh after cart loads
+        }
+    }
+}

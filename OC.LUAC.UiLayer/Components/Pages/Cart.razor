@@ -1,0 +1,117 @@
+﻿@page "/cart"
+@using OC.LUAC.UiLayer.DTO.Cart
+@using OC.LUAC.UiLayer.Services
+@inject CartService CartService
+@inject NavigationManager Nav
+
+<section class="py-16 px-6 md:px-12 text-white">
+    <h2 class="text-3xl font-bold mb-8 text-center">Your Cart</h2>
+
+    @if (loading)
+    {
+        <p class="text-center text-gray-400">Loading your cart...</p>
+    }
+    else if (!CartService.Items.Any())
+    {
+        <p class="text-center text-gray-400">Your cart is empty.</p>
+    }
+    else
+    {
+        <div class="max-w-5xl mx-auto">
+            <table class="w-full text-left">
+                <thead class="text-gray-300">
+                    <tr>
+                        <th class="py-2 text-center">Product</th>
+                        <th class="py-2 text-center">Size</th>
+                        <th class="py-2 text-center">Price</th>
+                        <th class="py-2 text-center">Quantity</th>
+                        <th class="py-2 text-center">Subtotal</th>
+                        <th class="py-2"></th>
+                    </tr>
+                </thead>
+                <tbody class="align-top">
+                    @foreach (var item in CartService.Items)
+                    {
+                        <tr class="border-t border-neutral-800">
+                            <!-- Product (image + name centered) -->
+                            <td class="py-4 text-center">
+                                <div class="flex flex-col items-center">
+                                    @if (!string.IsNullOrWhiteSpace(item.ThumbnailUrl))
+                                    {
+                                        <img src="@item.ThumbnailUrl" class="w-16 h-16 object-cover rounded mb-2" />
+                                    }
+                                    <span class="font-medium">@item.ProductName</span>
+                                </div>
+                            </td>
+
+                            <!-- Size -->
+                            <td class="py-4 text-center">@item.Size</td>
+
+                            <!-- Price -->
+                            <td class="py-4 text-center">@item.Price.ToString("C")</td>
+
+                            <!-- Quantity -->
+                            <td class="py-4 text-center">
+                                <input type="number"
+                                       min="1"
+                                       value="@item.Quantity"
+                                       disabled="@(item.MaxStock == 0)"
+                                       class="w-20 text-center bg-neutral-800 border border-neutral-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                       @oninput="e => QtyInput(item, e)" />
+                            </td>
+
+                            <!-- Subtotal -->
+                            <td class="py-4 text-center">@((item.Price * item.Quantity).ToString("C"))</td>
+
+                            <!-- Remove -->
+                            <td class="py-4 text-center">
+                                <button class="px-3 py-2 bg-neutral-900 rounded hover:bg-neutral-700"
+                                        @onclick="() => Remove(item)">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Cart Total -->
+            <div class="mt-6 text-right">
+                <p class="text-xl">
+                    Total:
+                    <span class="text-amber-600">@CartService.GetTotal().ToString("C")</span>
+                </p>
+                <button class="mt-4 px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700"
+                        @onclick="@(() => Nav.NavigateTo("/checkout"))">
+                    Checkout
+                </button>
+
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // optional small delay ensures CartService has populated
+        await Task.Delay(100);
+        loading = false;
+    }
+
+    private void QtyInput(CartItemDto item, ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var v)) v = item.Quantity;
+        if (v < 1) v = 1;
+
+        // ✅ now uses ProductVariantId
+        CartService.UpdateQuantity(item.ProductId, item.ProductVariantId, v);
+        StateHasChanged();
+    }
+
+    private void Remove(CartItemDto item)
+        => CartService.RemoveFromCart(item.ProductId, item.ProductVariantId);  // ✅ now uses ProductVariantId
+
+}

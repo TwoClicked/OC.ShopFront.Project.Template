@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// OC.LUAC.ApiLayer/Controllers/OrderController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OC.LUAC.ApiLayer.DTO.Order;
+using OC.LUAC.ApiLayer.DTO.Product;
 using OC.LUAC.ObjectLayer.Accounts;
 using OC.LUAC.ObjectLayer.Entities;
 using OC.LUAC.ObjectLayer.Orders;
 using OC.LUAC.ServiceLayer.Interfaces;
 using OC.LUAC.ServiceLayer.Utils;
-using System.Diagnostics.Metrics;
 using System.Security.Claims;
 
 namespace OC.LUAC.ApiLayer.Controllers
@@ -42,7 +43,6 @@ namespace OC.LUAC.ApiLayer.Controllers
             _emailService = emailService;
             _vouchers = voucherService;
             _shippingZones = shippingService;
-
         }
 
         // -------------------------------------------------
@@ -127,7 +127,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         {
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-            // ---- determine customer (existing or guest) ----
+            // ---- determine customer (existing by email OR create guest) ----
             int customerId;
             if (dto.CustomerId.HasValue)
             {
@@ -140,19 +140,27 @@ namespace OC.LUAC.ApiLayer.Controllers
                 if (string.IsNullOrWhiteSpace(dto.Email))
                     return BadRequest("Email is required when CustomerId is not provided.");
 
-                var guest = new Customer
+                var existingByEmail = await _customers.GetCustomerByEmailAsync(dto.Email.Trim());
+                if (existingByEmail != null)
                 {
-                    Email = dto.Email.Trim(),
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    Language = dto.Language,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    customerId = existingByEmail.Id;
+                }
+                else
+                {
+                    var guest = new Customer
+                    {
+                        Email = dto.Email.Trim(),
+                        FirstName = dto.FirstName,
+                        LastName = dto.LastName,
+                        Language = dto.Language ?? "en",
+                        CreatedAt = DateTime.UtcNow
+                    };
 
-                var randomPassword = Guid.NewGuid().ToString("N");
-                guest = await _customers.RegisterAsync(guest, randomPassword)
-                        ?? throw new InvalidOperationException("Guest registration failed.");
-                customerId = guest.Id;
+                    var randomPassword = Guid.NewGuid().ToString("N");
+                    guest = await _customers.RegisterAsync(guest, randomPassword)
+                            ?? throw new InvalidOperationException("Guest registration failed.");
+                    customerId = guest.Id;
+                }
             }
 
             // ---- build items with snapshots & validate stock ----
@@ -232,7 +240,7 @@ namespace OC.LUAC.ApiLayer.Controllers
                 isFreeShipping = true;
             }
 
-            // Voucher override for free shipping
+            // Voucher override for free shipping (if supported on your Voucher)
             if (!string.IsNullOrWhiteSpace(dto.VoucherCode))
             {
                 var voucher = await _vouchers.GetVoucherByCodeAsync(dto.VoucherCode);
@@ -250,7 +258,7 @@ namespace OC.LUAC.ApiLayer.Controllers
             {
                 OrderNumber = GenerateOrderNumber(),
                 CustomerId = customerId,
-                Language = dto.Language,
+                Language = dto.Language ?? "en",
                 ShippingStreet = dto.ShippingStreet,
                 ShippingNumber = dto.ShippingNumber,
                 ShippingPostalCode = dto.ShippingPostalCode,
@@ -269,15 +277,13 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             var created = await _orders.CreateOrderAsync(order);
 
-            // ---- generate PDF ----
+            // ---- generate PDF & send confirmation email ----
             var pdf = PdfGenerator.GenerateOrderPdf(created);
 
-            // fetch customer entity for email
             var customer = await _customers.GetCustomerByIdAsync(customerId);
             if (customer == null)
                 return BadRequest("Customer not found after order creation.");
 
-            // ---- send confirmation email ----
             var lang = created.Language ?? "en";
             var t = Localization.T;
 
@@ -285,26 +291,26 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             var body = $@"
             <p>{t(lang, "Hello")} {customer.FirstName},</p>
-            <p>{t(lang, "ThanksForOrder")}</b>.</p>
+            <p>{t(lang, "ThanksForOrder")}</p>
 
             <table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'>
-            <tr>
-            <th>{t(lang, "Product")}</th>
-            <th>{t(lang, "Qty")}</th>
-            <th>{t(lang, "Price")}</th>
-            <th>{t(lang, "Total")}</th>
-            </tr>";
+              <tr>
+                <th>{t(lang, "Product")}</th>
+                <th>{t(lang, "Qty")}</th>
+                <th>{t(lang, "Price")}</th>
+                <th>{t(lang, "Total")}</th>
+              </tr>";
 
             foreach (var item in created.Items)
             {
                 var lineTotal = item.Quantity * item.UnitPrice;
                 body += $@"
-            <tr>
-            <td>{item.ProductName} ({item.Size})</td>
-            <td>{item.Quantity}</td>
-            <td>{item.UnitPrice:C}</td>
-            <td>{lineTotal:C}</td>
-             </tr>";
+              <tr>
+                <td>{item.ProductName} ({item.Size})</td>
+                <td>{item.Quantity}</td>
+                <td>{item.UnitPrice:C}</td>
+                <td>{lineTotal:C}</td>
+              </tr>";
             }
 
             body += "</table>";
@@ -315,15 +321,13 @@ namespace OC.LUAC.ApiLayer.Controllers
                 body += $@"<p><strong>{t(lang, "Discount")} ({created.VoucherCode}):</strong> -{created.DiscountAmount:C}</p>";
             }
 
-            body += $@"
-             <p><strong>{t(lang, "GrandTotal")}:</strong> {created.TotalAfterDiscount:C}</p>";
+            body += $@"<p><strong>{t(lang, "GrandTotal")}:</strong> {created.TotalAfterDiscount:C}</p>";
 
             body += $@"
-
-             <p><strong>{t(lang, "ImportantNotice")}:</strong></p>
-             <p>{t(lang, "OrderProcessedAfterPayment")}</p>
-             <p>{t(lang, "OrderCancelledIfNoPayment")}</p>
-             <p>{t(lang, "ThankYou")}</p>";
+            <p><strong>{t(lang, "ImportantNotice")}:</strong></p>
+            <p>{t(lang, "OrderProcessedAfterPayment")}</p>
+            <p>{t(lang, "OrderCancelledIfNoPayment")}</p>
+            <p>{t(lang, "ThankYou")}</p>";
 
             await _emailService.SendEmailAsync(
                 to: customer.Email,
@@ -333,6 +337,7 @@ namespace OC.LUAC.ApiLayer.Controllers
                 attachmentName: $"Order {created.OrderNumber}.pdf"
             );
 
+            // ---- reduce stock ----
             foreach (var oi in created.Items)
             {
                 await _stock.RecordStockChangeAsync(
@@ -341,12 +346,15 @@ namespace OC.LUAC.ApiLayer.Controllers
                     StockActionType.Sold,
                     created.Id);
             }
+            var response = new OrderResponseDto
+            {
+                OrderId = created.OrderNumber,  
+                Message = "Order created successfully"
+            };
 
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, MapToDetailDto(created));
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, response);
+
         }
-
-
-
 
         [HttpPut("{id:int}/ship")]
         [Authorize(Roles = "Admin")]
@@ -360,20 +368,19 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             if (!ok) return NotFound();
 
-            //Fetch order with customer
-
+            // Fetch order + customer for email
             var order = await _orders.GetOrderByIdAsync(id);
             if (order == null) return NotFound("Order not found after shipping update");
 
             var customer = await _customers.GetCustomerByIdAsync(order.CustomerId.Value);
             if (customer == null) return NotFound("Customer not found for this order.");
 
-            // build email body
             var lang = order.Language ?? "en";
             var subject = $"{Localization.T(lang, "OrderShipped")} - {order.OrderNumber}";
 
-            var trackingText = (!string.IsNullOrEmpty(order.TrackingNumber) && !string.IsNullOrEmpty(order.TrackingUrl))
-                ? $"<p>{Localization.T(lang, "OrderShipped")} <br/>" +
+            var trackingText =
+                (!string.IsNullOrEmpty(order.TrackingNumber) && !string.IsNullOrEmpty(order.TrackingUrl))
+                ? $"<p>{Localization.T(lang, "OrderShipped")}<br/>" +
                   $"{Localization.T(lang, "TrackingNumber")}: <b>{order.TrackingNumber}</b><br/>" +
                   $"{Localization.T(lang, "TrackHere")}: <a href='{order.TrackingUrl}' target='_blank'>{order.TrackingUrl}</a></p>"
                 : !string.IsNullOrEmpty(order.TrackingNumber)
@@ -385,25 +392,21 @@ namespace OC.LUAC.ApiLayer.Controllers
              {trackingText}
              <p>{Localization.T(lang, "ThankYou")}</p>";
 
-
             await _emailService.SendEmailAsync(
                 to: customer.Email,
                 subject: subject,
                 body: body);
 
             return Ok(new { id, status = "Shipped" });
-
         }
 
-
-        // Customer self-Cancel
+        // Customer self-cancel
         [HttpPut("{id:int}/cancel-me")]
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CancelMyOrder(int id)
         {
-           
             var idClaim = User.FindFirst("customerId")
-                         ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                         ?? User.FindFirst(ClaimTypes.NameIdentifier);
 
             if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
                 return Unauthorized("No valid customer ID found in token.");
@@ -418,7 +421,6 @@ namespace OC.LUAC.ApiLayer.Controllers
             var ok = await _orders.CancelOrderAsync(id);
             if (!ok) return BadRequest("Cancellation failed.");
 
-            // Reload customer to avoid null reference when sending email
             var customer = await _customers.GetCustomerByIdAsync(order.CustomerId.Value);
             if (customer == null)
                 return NotFound("Customer not found.");
@@ -439,9 +441,7 @@ namespace OC.LUAC.ApiLayer.Controllers
             return Ok(new { id, status = "Cancelled by Customer" });
         }
 
-
-
-        //Cancel for admin(Payment)
+        // Admin: cancel for no payment
         [HttpPut("{id:int}/cancel-nopayment")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CancelForNoPayment(int id)
@@ -471,9 +471,6 @@ namespace OC.LUAC.ApiLayer.Controllers
             return Ok(new { id, status = "Cancelled (No Payment)" });
         }
 
-
-
-
         [Authorize(Roles = "Admin")]
         [HttpGet("shipped")]
         public async Task<ActionResult<IEnumerable<Order>>> GetShippedOrders()
@@ -482,13 +479,11 @@ namespace OC.LUAC.ApiLayer.Controllers
             return Ok(orders);
         }
 
-
-        //Mark Paid
+        // Mark Paid
         [HttpPut("{id:int}/mark-paid")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> MarkPaid(int id)
         {
-
             var order = await _orders.GetOrderByIdAsync(id);
             if (order == null) return NotFound();
 
@@ -498,34 +493,28 @@ namespace OC.LUAC.ApiLayer.Controllers
             order.Status = OrderStatus.Processing; // payment confirmed by admin goes into processing
             await _orders.UpdateOrderAsync(order);
 
-
-            //Send Confirmation email to customer
-
+            // Send confirmation email to customer
             var customer = await _customers.GetCustomerByIdAsync(order.CustomerId.Value);
             if (customer == null) return NotFound("Customer not found.");
-            if (customer != null)
-            {
-                var lang = order.Language ?? "en";
-                var t = Localization.T;
 
-                var subject = $"{t(lang, "PaymentReceived")} - {order.OrderNumber}";
-                var body = $@"
+            var lang = order.Language ?? "en";
+            var t = Localization.T;
+
+            var subject = $"{t(lang, "PaymentReceived")} - {order.OrderNumber}";
+            var body = $@"
                 <p>{t(lang, "Hello")} {customer.FirstName},</p>
                 <p>{t(lang, "PaymentReceivedMessage")}</p>
                 <p><strong>{t(lang, "OrderNumber")}:</strong> {order.OrderNumber}</p>
                 <p>{t(lang, "ThankYou")}</p>";
 
-                await _emailService.SendEmailAsync(
-                    to: customer.Email,
-                    subject: subject,
-                    body: body
-                );
-            }
+            await _emailService.SendEmailAsync(
+                to: customer.Email,
+                subject: subject,
+                body: body
+            );
 
             return Ok(new { id = order.Id, status = "Paid" });
         }
-
-
 
         // --- helpers ---
         private static string GenerateOrderNumber()
