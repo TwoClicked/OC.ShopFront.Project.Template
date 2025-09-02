@@ -13,12 +13,16 @@ public class CustomerController : ControllerBase
     private readonly ICustomerService _customers;
     private readonly IOrderService _orders;
     private readonly ITokenService _tokens;
+    private readonly IEmailService _email;
+    private readonly IConfiguration _config;
 
-    public CustomerController(ICustomerService customers, IOrderService orders, ITokenService tokens)
+    public CustomerController(ICustomerService customers, IOrderService orders, ITokenService tokens, IEmailService email, IConfiguration config)
     {
         _customers = customers;
         _orders = orders;
         _tokens = tokens;
+        _email = email;
+        _config = config;
     }
 
     // =========================
@@ -54,6 +58,27 @@ public class CustomerController : ControllerBase
 
         var token = _tokens.CreateCustomerToken(customer);
         return Ok(new LoginResponseDto { Token = token, Customer = customer });
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        var token = await _customers.CreatePasswordResetTokenAsync(dto.Email);
+        if (token == null) return Ok(); // don't reveal existence
+
+        var frontendBaseUrl = _config["Frontend:BaseUrl"];
+        var resetLink = $"{frontendBaseUrl}/reset-password?token={token.Token}";
+
+        await _email.SendEmailAsync(dto.Email, "Password Reset", $"Click here: {resetLink}");
+
+        return Ok(new { message = "If the email exists, a reset link was sent." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        var ok = await _customers.ResetPasswordAsync(dto.Token, dto.NewPassword);
+        return ok ? Ok(new { status = "PasswordReset" }) : BadRequest("Invalid or expired token");
     }
 
     // =========================
@@ -103,10 +128,23 @@ public class CustomerController : ControllerBase
     // =========================
 
     [Authorize(Roles = "Customer")]
+    [HttpGet("me/orders")]
+    public async Task<ActionResult<List<Order>>> GetMyOrders()
+    {
+        var idClaim = User.FindFirst("customerId");
+        if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
+            return Unauthorized();
+
+        var orders = await _orders.GetOrdersByCustomerIdAsync(customerId);
+        return Ok(orders);
+    }
+
+
+    [Authorize(Roles = "Customer")]
     [HttpGet("me")]
     public async Task<ActionResult<CustomerProfileDto>> GetProfile()
     {
-        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var idClaim = User.FindFirst("customerId");
         if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
             return Unauthorized();
 
@@ -128,7 +166,7 @@ public class CustomerController : ControllerBase
     [HttpPut("me")]
     public async Task<ActionResult<Customer>> UpdateProfile([FromBody] UpdateCustomerDto dto)
     {
-        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var idClaim = User.FindFirst("customerId");
         if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
             return Unauthorized();
 
@@ -147,7 +185,7 @@ public class CustomerController : ControllerBase
     [HttpPut("me/password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
-        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var idClaim = User.FindFirst("customerId");
         if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
             return Unauthorized();
 
@@ -159,7 +197,7 @@ public class CustomerController : ControllerBase
     [HttpDelete("me")]
     public async Task<IActionResult> DeleteAccount()
     {
-        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var idClaim = User.FindFirst("customerId");
         if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
             return Unauthorized();
 
@@ -175,7 +213,7 @@ public class CustomerController : ControllerBase
     [HttpGet("me/addresses")]
     public async Task<ActionResult<List<Address>>> GetAddresses()
     {
-        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var idClaim = User.FindFirst("customerId");
         if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
             return Unauthorized();
 
@@ -187,7 +225,7 @@ public class CustomerController : ControllerBase
     [HttpPost("me/addresses")]
     public async Task<ActionResult<Address>> AddAddress([FromBody] Address address)
     {
-        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var idClaim = User.FindFirst("customerId");
         if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
             return Unauthorized();
 

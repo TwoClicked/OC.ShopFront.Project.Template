@@ -50,7 +50,7 @@ namespace OC.LUAC.ServiceLayer.Services
         public async Task<List<Order>> GetOrdersByCustomerIdAsync(int customerId)
         {
             return await _context.Orders
-                .Where(o => o.CustomerId == customerId && !o.IsDeleted)
+                .Where(o => o.CustomerId == customerId)
                 .Include(o => o.Items)
                 .ToListAsync();
         }

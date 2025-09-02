@@ -1,0 +1,312 @@
+﻿@page "/account"
+@using OC.LUAC.UiLayer.DTO.Auth
+@using OC.LUAC.UiLayer.DTO.Order
+@using OC.LUAC.UiLayer.Services
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<section class="min-h-screen bg-neutral-900 text-white p-8">
+    <div class="max-w-5xl mx-auto bg-neutral-800 rounded-lg shadow-lg p-6">
+        <!-- Tabs -->
+        <div class="flex space-x-6 border-b border-neutral-700 mb-6">
+            <button class="@GetTabClass("profile")" @onclick='() => SwitchTab("profile")'>Profile</button>
+            <button class="@GetTabClass("password")" @onclick='() => SwitchTab("password")'>Change Password</button>
+            <button class="@GetTabClass("orders")" @onclick='() => SwitchTab("orders")'>Orders</button>
+            <button class="@GetTabClass("danger")" @onclick='() => SwitchTab("danger")'>Danger Zone</button>
+        </div>
+
+        <!-- Profile -->
+        @if (ActiveTab == "profile")
+        {
+            @if (profile == null)
+            {
+                <p>Loading profile...</p>
+            }
+            else
+            {
+                <EditForm Model="@profile" OnValidSubmit="UpdateProfile">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">First Name</label>
+                        <InputText @bind-Value="profile.FirstName"
+                                   class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Last Name</label>
+                        <InputText @bind-Value="profile.LastName"
+                                   class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Email (read-only)</label>
+                        <input value="@profile.Email" disabled
+                               class="mt-1 w-full rounded-md bg-neutral-700 text-gray-400 p-2" />
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium">Language</label>
+                        <InputSelect @bind-Value="profile.Language"
+                                     class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2">
+                            <option value="en">English</option>
+                            <option value="de">German</option>
+                        </InputSelect>
+                    </div>
+
+                    <button type="submit"
+                            class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
+                        Save Changes
+                    </button>
+                </EditForm>
+            }
+        }
+
+        <!-- Change Password -->
+        @if (ActiveTab == "password")
+        {
+            <EditForm Model="@passwordModel" OnValidSubmit="ChangePassword">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium">Old Password</label>
+                    <InputText @bind-Value="passwordModel.OldPassword" type="password"
+                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium">New Password</label>
+                    <InputText @bind-Value="passwordModel.NewPassword" type="password"
+                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium">Confirm Password</label>
+                    <InputText @bind-Value="passwordModel.ConfirmPassword" type="password"
+                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
+                    Change Password
+                </button>
+            </EditForm>
+        }
+
+        <!-- Orders -->
+        @if (ActiveTab == "orders")
+        {
+            @if (orders == null)
+            {
+                <p>Loading orders...</p>
+            }
+            else if (!orders.Any())
+            {
+                <p>No orders found.</p>
+            }
+            else
+            {
+                <table class="w-full text-left border-collapse">
+                    <thead class="border-b border-neutral-700 text-gray-400 text-sm">
+                        <tr>
+                            <th class="py-2 px-4">Order #</th>
+                            <th class="py-2 px-4">Date</th>
+                            <th class="py-2 px-4">Total</th>
+                            <th class="py-2 px-4">Status</th>
+                            <th class="py-2 px-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in orders)
+                        {
+                            <tr class="border-b border-neutral-800">
+                                <td class="py-2 px-4 font-semibold">@order.OrderNumber</td>
+                                <td class="py-2 px-4">@order.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td class="py-2 px-4">@order.Total.ToString("C")</td>
+                                <td class="py-2 px-4">
+                                    @if (order.Status == "Cancelled")
+                                    {
+                                        <span class="text-red-500 font-semibold">@order.Status</span>
+                                    }
+                                    else
+                                    {
+                                        @order.Status
+                                    }
+                                </td>
+                                <td class="py-2 px-4">
+                                    @if (order.Status == "PendingPayment")
+                                    {
+                                        <button @onclick="() => CancelOrder(order.Id)"
+                                                class="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700">
+                                            Cancel
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+
+        <!-- Danger Zone -->
+        @if (ActiveTab == "danger")
+        {
+            <div class="space-y-4">
+                <p class="text-red-400 text-sm">
+                    ⚠️ Deleting your account is permanent. All your data will be lost.
+                </p>
+
+                <!-- Input confirmation -->
+                <input @bind="deleteConfirmation"
+                       placeholder='Type "delete" to confirm'
+                       class="w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+
+                <!-- Delete button -->
+                <button @onclick="ConfirmDelete"
+                        disabled="@(!CanDelete)"
+                        class="w-full py-2 px-4 rounded-md transition-colors
+                               @(CanDelete ? "bg-red-600 hover:bg-red-700 text-white" : "bg-neutral-700 text-gray-400 cursor-not-allowed")">
+                    Delete Account
+                </button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Message))
+        {
+            <p class="text-center text-red-500 mt-3">@Message</p>
+        }
+    </div>
+</section>
+
+@code {
+    private string ActiveTab { get; set; } = "profile";
+    private CustomerProfileDto? profile;
+    private List<OrderDto>? orders;
+    private ChangePasswordFormDto passwordModel = new();
+    private string? Message;
+
+    private string deleteConfirmation = string.Empty;
+    private bool CanDelete => deleteConfirmation.Equals("delete", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadProfile();
+            await LoadOrders();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadProfile()
+    {
+        profile = await AuthService.GetProfileAsync();
+    }
+
+    private async Task LoadOrders()
+    {
+        var result = await AuthService.GetOrdersAsync();
+        if (result != null)
+        {
+            orders = result
+                .OrderBy(o => o.Status == "PendingPayment" ? 0 :
+                              o.Status == "Processing" ? 1 :
+                              o.Status == "Shipped" ? 2 :
+                              o.Status == "Cancelled" ? 3 : 4)
+                .ThenByDescending(o => o.CreatedAt)
+                .ToList();
+        }
+    }
+
+    private async Task UpdateProfile()
+    {
+        if (profile == null) return;
+
+        var updateDto = new UpdateCustomerDto
+            {
+                FirstName = profile.FirstName,
+                LastName = profile.LastName,
+                Language = profile.Language
+            };
+
+        var success = await AuthService.UpdateProfileAsync(updateDto);
+        Message = success ? "Profile updated!" : "Failed to update profile.";
+    }
+
+    private async Task ChangePassword()
+    {
+        if (passwordModel.NewPassword != passwordModel.ConfirmPassword)
+        {
+            Message = "❌ New password and confirmation do not match.";
+            return;
+        }
+
+        var dto = new ChangePasswordFormDto
+            {
+                OldPassword = passwordModel.OldPassword,
+                NewPassword = passwordModel.NewPassword
+            };
+
+        var success = await AuthService.ChangePasswordAsync(dto);
+        Message = success ? "✅ Password changed!" : "❌ Failed to change password.";
+        passwordModel = new(); // reset form
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (!CanDelete) return;
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you absolutely sure you want to delete your account? This cannot be undone.");
+        if (confirmed)
+        {
+            await DeleteAccount();
+        }
+    }
+
+    private async Task DeleteAccount()
+    {
+        var success = await AuthService.DeleteAccountAsync();
+        if (success)
+        {
+            await AuthService.LogoutAsync();
+            Nav.NavigateTo("/", forceLoad: true);
+        }
+        else
+        {
+            Message = "Failed to delete account.";
+        }
+    }
+
+    private async Task CancelOrder(int orderId)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Cancel this order?");
+        if (confirmed)
+        {
+            var success = await AuthService.CancelOrderAsync(orderId);
+            if (success)
+            {
+                await LoadOrders();
+                StateHasChanged();
+            }
+            else
+            {
+                Message = "Failed to cancel order.";
+            }
+        }
+    }
+
+    private void SwitchTab(string tab)
+    {
+        ActiveTab = tab;
+        Message = null;
+    }
+
+    private string GetTabClass(string tab) =>
+        ActiveTab == tab
+            ? "pb-2 text-amber-500 font-semibold border-b-2 border-amber-500"
+            : "pb-2 text-gray-400 hover:text-white";
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+}

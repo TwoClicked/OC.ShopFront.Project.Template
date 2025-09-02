@@ -164,6 +164,34 @@ namespace OC.LUAC.DataLayer.Migrations
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("OC.LUAC.ObjectLayer.Accounts.PasswordResetToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("PasswordResetTokens");
+                });
+
             modelBuilder.Entity("OC.LUAC.ObjectLayer.Chat.ChatMessage", b =>
                 {
                     b.Property<int>("Id")
@@ -640,6 +668,17 @@ namespace OC.LUAC.DataLayer.Migrations
                 {
                     b.HasOne("OC.LUAC.ObjectLayer.Accounts.Customer", "Customer")
                         .WithMany("Addresses")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("OC.LUAC.ObjectLayer.Accounts.PasswordResetToken", b =>
+                {
+                    b.HasOne("OC.LUAC.ObjectLayer.Accounts.Customer", "Customer")
+                        .WithMany()
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

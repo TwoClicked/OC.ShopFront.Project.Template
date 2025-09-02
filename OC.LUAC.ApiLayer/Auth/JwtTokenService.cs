@@ -22,8 +22,13 @@ namespace OC.LUAC.ApiLayer.Auth
         {
             var claims = new List<Claim>
             {
+                // Standard "sub" is the email
                 new Claim(JwtRegisteredClaimNames.Sub, c.Email ?? $"customer-{c.Id}"),
+
+                // Only use this custom claim for numeric IDs
                 new Claim("customerId", c.Id.ToString()),
+
+                // Role claim for auth
                 new Claim(ClaimTypes.Role, "Customer")
             };
 
@@ -35,6 +40,7 @@ namespace OC.LUAC.ApiLayer.Auth
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, email),
+                new Claim("adminEmail", email), // explicit admin identifier
                 new Claim(ClaimTypes.Role, "Admin")
             };
 

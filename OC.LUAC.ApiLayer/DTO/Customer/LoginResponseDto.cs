@@ -6,6 +6,7 @@ namespace OC.LUAC.ApiLayer.DTO.Customer
     {
         public string Token { get; set; }
         public string Role { get; set; } = "Customer";
+        public DateTime ExpiresAt { get; set; }  
         public CustomerEntity Customer { get; set; }
     }
 }

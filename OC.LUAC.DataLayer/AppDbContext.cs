@@ -14,6 +14,7 @@ namespace OC.LUAC.DataLayer
         public DbSet<Customer> Customers { get; set; }
         public DbSet<AdminUser> AdminUsers { get; set; }
         public DbSet<Address> Addresses { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
         // Products
         public DbSet<Category> Categories { get; set; }

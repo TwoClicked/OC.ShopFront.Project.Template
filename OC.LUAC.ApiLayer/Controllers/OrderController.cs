@@ -58,7 +58,7 @@ namespace OC.LUAC.ApiLayer.Controllers
             var order = await _orders.GetOrderByIdAsync(id);
             if (order == null) return NotFound();
 
-            return Ok(MapToDetailDto(order));
+            return Ok(MapToSummaryDto(order));
         }
 
         // GET /api/orders/all  (ADMIN - list all orders)
@@ -96,15 +96,15 @@ namespace OC.LUAC.ApiLayer.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<ActionResult<IEnumerable<OrderSummaryDto>>> GetMyOrders()
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (claim == null) return Unauthorized("No customer ID in token");
-
-            if (!int.TryParse(claim.Value, out var customerId))
-                return Unauthorized("Invalid customer ID in token");
+            // Prefer customerId claim over nameidentifier
+            var idClaim = User.FindFirst("customerId");
+            if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
+                return Unauthorized("No valid customer ID found in token.");
 
             var list = await _orders.GetOrdersByCustomerIdAsync(customerId);
             return Ok(list.OrderByDescending(o => o.CreatedAt).Select(MapToSummaryDto).ToList());
         }
+
 
         // GET /api/orders/customer/{customerId} (admin/debug)
         [HttpGet("customer/{customerId:int}")]
@@ -400,14 +400,11 @@ namespace OC.LUAC.ApiLayer.Controllers
             return Ok(new { id, status = "Shipped" });
         }
 
-        // Customer self-cancel
         [HttpPut("{id:int}/cancel-me")]
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CancelMyOrder(int id)
         {
-            var idClaim = User.FindFirst("customerId")
-                         ?? User.FindFirst(ClaimTypes.NameIdentifier);
-
+            var idClaim = User.FindFirst("customerId");
             if (idClaim == null || !int.TryParse(idClaim.Value, out var customerId))
                 return Unauthorized("No valid customer ID found in token.");
 
@@ -421,25 +418,9 @@ namespace OC.LUAC.ApiLayer.Controllers
             var ok = await _orders.CancelOrderAsync(id);
             if (!ok) return BadRequest("Cancellation failed.");
 
-            var customer = await _customers.GetCustomerByIdAsync(order.CustomerId.Value);
-            if (customer == null)
-                return NotFound("Customer not found.");
-
-            var lang = order.Language ?? "en";
-            var subject = $"{Localization.T(lang, "OrderCancelledSubject")} - {order.OrderNumber}";
-            var body = $@"
-            <p>{Localization.T(lang, "Hello")} {customer.FirstName},</p>
-            <p>{Localization.T(lang, "OrderCancelledByCustomerBody")}</p>
-            <p>{Localization.T(lang, "ThankYou")}</p>";
-
-            await _emailService.SendEmailAsync(
-                to: customer.Email,
-                subject: subject,
-                body: body
-            );
-
             return Ok(new { id, status = "Cancelled by Customer" });
         }
+
 
         // Admin: cancel for no payment
         [HttpPut("{id:int}/cancel-nopayment")]
@@ -525,15 +506,8 @@ namespace OC.LUAC.ApiLayer.Controllers
             Id = o.Id,
             OrderNumber = o.OrderNumber,
             Status = o.Status.ToString(),
-            CreatedAt = o.CreatedAt
-        };
-
-        private static OrderSummaryDto MapToDetailDto(Order o) => new OrderSummaryDto
-        {
-            Id = o.Id,
-            OrderNumber = o.OrderNumber,
-            Status = o.Status.ToString(),
             CreatedAt = o.CreatedAt,
+            TotalAfterDiscount = o.TotalAfterDiscount,
             Items = o.Items.Select(i => new OrderItemDto
             {
                 ProductName = i.ProductName,

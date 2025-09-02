@@ -5,11 +5,13 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//Ui layer service injections (Might make a UI Di class for this later)
+
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<ShippingService>();
-
+builder.Services.AddScoped<AuthService>();
 
 
 

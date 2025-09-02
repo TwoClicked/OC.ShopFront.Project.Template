@@ -39,11 +39,33 @@ namespace OC.LUAC.ApiLayer
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
                         ClockSkew = TimeSpan.Zero
                     };
+
+                    // 🔍 Debug logging for JWT events
+                    o.Events = new JwtBearerEvents
+                    {
+                        OnAuthenticationFailed = ctx =>
+                        {
+                            Console.WriteLine($"❌ JWT validation failed: {ctx.Exception.Message}");
+                            return Task.CompletedTask;
+                        },
+                        OnTokenValidated = ctx =>
+                        {
+                            var claims = string.Join(", ", ctx.Principal.Claims.Select(c => $"{c.Type}={c.Value}"));
+                            Console.WriteLine($"✅ JWT validated for: {ctx.Principal.Identity?.Name}");
+                            Console.WriteLine($"Claims: {claims}");
+                            return Task.CompletedTask;
+                        },
+                        OnChallenge = ctx =>
+                        {
+                            Console.WriteLine($"⚠️ JWT challenge: {ctx.Error}, {ctx.ErrorDescription}");
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             services.AddAuthorization();
 
-            //  Register the seeding hosted service (runs once on startup)
+            // Register the seeding hosted service (runs once on startup)
             services.AddHostedService<AdminSeedHostedService>();
 
             return services;

@@ -263,5 +263,38 @@ namespace OC.LUAC.ServiceLayer.Services
             using var sha256 = SHA256.Create();
             return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
         }
+
+        public async Task<PasswordResetToken?> CreatePasswordResetTokenAsync(string email)
+        {
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == email && c.IsActive && !c.IsDeleted);
+            if (customer == null) return null;
+
+            var resetToken = new PasswordResetToken
+            {
+                CustomerId = customer.Id,
+                Token = Guid.NewGuid().ToString("N"),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(15)
+            };
+
+            _context.PasswordResetTokens.Add(resetToken);
+            await _context.SaveChangesAsync();
+
+            return resetToken;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+        {
+            var reset = await _context.PasswordResetTokens
+                .Include(t => t.Customer)
+                .FirstOrDefaultAsync(t => t.Token == token && !t.Used && t.ExpiresAt > DateTime.UtcNow);
+
+            if (reset == null) return false;
+
+            reset.Used = true;
+            reset.Customer.PasswordHash = HashPassword(newPassword);
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

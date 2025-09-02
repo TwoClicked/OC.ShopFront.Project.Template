@@ -1,33 +1,45 @@
 ﻿@inherits LayoutComponentBase
 @inject OC.LUAC.UiLayer.Services.CartService CartService
+@inject OC.LUAC.UiLayer.Services.AuthService AuthService
+@inject NavigationManager Nav
 
-<div class="min-h-screen flex flex-col bg-neutral-900 text-white">
+<div class="@MainWrapperClass" style="@MainWrapperStyle">
     <!-- Navbar -->
-    <header class="bg-neutral-900 shadow-md">
+    <header class="@HeaderClass">
         <nav class="container mx-auto flex justify-between items-center p-4 relative">
-            <a href="/" class="flex items-center">
-                <img src="/images/WHITE_LUAC.png" alt="LUAC Logo" class="h-24 w-auto" />
-            </a>
+            <div class="flex items-center space-x-4">
+                <a href="/" class="flex items-center">
+                    <img src="/images/WHITE_LUAC.png" alt="LUAC Logo" class="h-24 w-auto" />
+                </a>
+
+                @if (isLoggedIn)
+                {
+                    <span class="px-4 py-2 rounded text-amber-600 transition-colors shadow-md">
+                        Hello, @userFirstName
+                    </span>
+                }
+            </div>
 
             <ul class="flex space-x-4 items-center">
                 <li>
                     <NavLink href="/" Match="NavLinkMatch.All"
-                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors shadow-md"
+                             class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors shadow-md"
                              activeClass="text-amber-600 font-medium">
                         Home
                     </NavLink>
                 </li>
                 <li>
                     <NavLink href="/shop" Match="NavLinkMatch.Prefix"
-                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors"
+                             class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                              activeClass="text-amber-600 font-medium">
                         Shop
                     </NavLink>
                 </li>
 
+                <!-- Cart -->
                 <li class="relative">
                     <NavLink href="/cart" Match="NavLinkMatch.Prefix"
-                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-00 transition-colors"
+                             class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                              activeClass="text-amber-600 font-semibold">
                         Cart
                     </NavLink>
@@ -40,40 +52,124 @@
                     }
                 </li>
 
-                <li>
-                    <NavLink href="/account" Match="NavLinkMatch.Prefix"
-                             class="px-4 py-2 rounded bg-neutral-900 hover:bg-neutral-700 transition-colors"
-                             activeClass="text-amber-600 font-medium">
-                        Account
-                    </NavLink>
-                </li>
+                @if (isLoggedIn)
+                {
+                    <!-- Account -->
+                    <li>
+                        <NavLink href="/account" Match="NavLinkMatch.Prefix"
+                                 class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
+                                 activeClass="text-amber-600 font-medium">
+                            Account
+                        </NavLink>
+                    </li>
+
+                    <!-- Logout -->
+                    <li>
+                        <button @onclick="Logout"
+                                class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors">
+                            Logout
+                        </button>
+                    </li>
+                }
+                else
+                {
+                    <li>
+                        <NavLink href="/loginRegister" Match="NavLinkMatch.Prefix"
+                                 class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
+                                 activeClass="text-amber-600 font-medium">
+                            Login / Register
+                        </NavLink>
+                    </li>
+                }
             </ul>
         </nav>
     </header>
 
     <!-- Main content -->
-    <main class="flex-1 container mx-auto p-6">
+    <main class="flex-1 container mx-auto p-6 relative z-10">
         @Body
     </main>
 
     <!-- Footer -->
-    <footer class="bg-neutral-900 text-center p-4 text-sm text-gray-400">
+    <footer class="@FooterClass">
         © @DateTime.Now.Year - LUAC. All rights reserved.
     </footer>
 </div>
 
 @code {
     private bool _initialized;
+    private bool isLoggedIn;
+    private string? userFirstName;
+
+    // ✅ Wrapper background logic
+    private string MainWrapperClass => "min-h-screen flex flex-col text-white relative";
+    private string MainWrapperStyle =>
+        Nav.Uri.Contains("/loginRegister", StringComparison.OrdinalIgnoreCase)
+            ? "background-image: url('/images/login-page.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;"
+            : "background-color: rgb(23,23,23);";
+
+    // ✅ Transparent header/footer for login page
+    private string HeaderClass =>
+        Nav.Uri.Contains("/loginRegister", StringComparison.OrdinalIgnoreCase)
+            ? "bg-transparent shadow-none z-10"
+            : "bg-neutral-900 shadow-md";
+
+    private string FooterClass =>
+        Nav.Uri.Contains("/loginRegister", StringComparison.OrdinalIgnoreCase)
+            ? "bg-transparent text-center p-4 text-sm text-gray-300 z-10"
+            : "bg-neutral-900 text-center p-4 text-sm text-gray-400";
+
+    protected override void OnInitialized()
+    {
+        // Subscribe for login/logout changes
+        AuthService.OnAuthStateChanged += async () =>
+        {
+            await LoadUserProfile();
+            InvokeAsync(StateHasChanged);
+        };
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_initialized)
         {
+            await LoadUserProfile();
+
             await CartService.InitializeAsync();
             CartService.OnChange += StateHasChanged;
-            _initialized = true;
 
-            StateHasChanged(); // force refresh after cart loads
+            _initialized = true;
+            StateHasChanged();
         }
+    }
+
+    private async Task LoadUserProfile()
+    {
+        isLoggedIn = await AuthService.IsLoggedInAsync();
+
+        if (isLoggedIn)
+        {
+            var cachedProfile = await AuthService.GetProfileAsync(refresh: false);
+            userFirstName = cachedProfile?.FirstName;
+
+            var latest = await AuthService.GetProfileAsync(refresh: true);
+            if (latest != null)
+            {
+                userFirstName = latest.FirstName;
+            }
+        }
+        else
+        {
+            userFirstName = null;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        await LoadUserProfile();
+        Nav.NavigateTo("/", forceLoad: true);
     }
 }
