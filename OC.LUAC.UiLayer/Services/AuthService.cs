@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Blazored.LocalStorage;
 using OC.LUAC.UiLayer.DTO.Auth;
 using OC.LUAC.UiLayer.DTO.Order;
+using OC.LUAC.UiLayer.DTO.AdminDash;
 
 
 
@@ -36,20 +37,30 @@ namespace OC.LUAC.UiLayer.Services
         // ====================
         // LOGIN
         // ====================
-        public async Task<bool> LoginAsync(LoginDto dto)
+        public async Task<(bool Success, bool Disabled)> LoginAsync(LoginDto dto)
         {
             var response = await _http.PostAsJsonAsync("customers/login", dto);
-            if (!response.IsSuccessStatusCode) return false;
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                // Account exists but disabled
+                return (false, true);
+            }
+
+            if (!response.IsSuccessStatusCode)
+                return (false, false); // Invalid credentials
 
             var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
-            if (loginResponse is null || string.IsNullOrEmpty(loginResponse.Token)) return false;
+            if (loginResponse is null || string.IsNullOrEmpty(loginResponse.Token))
+                return (false, false);
 
             await _localStorage.SetItemAsync(TokenKey, loginResponse.Token);
             await _localStorage.SetItemAsync(ProfileKey, loginResponse.Customer);
 
             OnAuthStateChanged?.Invoke();
-            return true;
+            return (true, false);
         }
+
 
         // ====================
         // LOGOUT
@@ -217,7 +228,7 @@ namespace OC.LUAC.UiLayer.Services
         // ====================
         // GET ORDERS
         // ====================
-        public async Task<List<OrderDto>?> GetOrdersAsync()
+        public async Task<List<AdminOrderSummaryDto>?> GetOrdersAsync()
         {
             var token = await GetTokenAsync();
             if (string.IsNullOrEmpty(token)) return null;
@@ -230,31 +241,44 @@ namespace OC.LUAC.UiLayer.Services
                 var response = await _http.SendAsync(request);
                 if (!response.IsSuccessStatusCode) return null;
 
-                var apiOrders = await response.Content.ReadFromJsonAsync<List<OC.LUAC.ApiLayer.DTO.Order.OrderSummaryDto>>();
+                var apiOrders = await response.Content.ReadFromJsonAsync<List<OrderSummaryDto>>();
                 if (apiOrders == null) return null;
 
                 // Map API DTO → UI DTO
-                return apiOrders.Select(o => new OrderDto
+                return apiOrders.Select(o => new AdminOrderSummaryDto
                 {
                     Id = o.Id,
-                    OrderNumber = o.OrderNumber, // show real order number
+                    OrderNumber = o.OrderNumber,
                     CreatedAt = o.CreatedAt,
                     Status = o.Status,
-                    Total = o.TotalAfterDiscount, // use DB total
-                    Items = o.Items.Select(i => new OrderItemDto
+                    Subtotal = o.Subtotal,
+                    Discount = o.Discount,
+                    ShippingCost = o.ShippingCost,
+                    TotalAfterDiscount = o.TotalAfterDiscount,
+                    CustomerName = o.CustomerName,
+                    CustomerEmail = o.CustomerEmail,
+                    ShippingAddress = o.ShippingAddress,
+                    ShippingCity = o.ShippingCity,
+                    ShippingPostalCode = o.ShippingPostalCode,
+                    ShippingCountry = o.ShippingCountry,
+                    TrackingNumber = o.TrackingNumber,
+                    TrackingUrl = o.TrackingUrl,
+                    Items = o.Items.Select(i => new AdminOrderItemDto
                     {
-                        ProductId = 0, // API doesn’t send ProductId
                         ProductName = i.ProductName,
+                        Size = i.Size,
                         Quantity = i.Quantity,
-                        Price = i.UnitPrice
+                        UnitPrice = i.UnitPrice
                     }).ToList()
                 }).ToList();
+
             }
             catch
             {
                 return null;
             }
         }
+
 
         // ====================
         // CANCEL ORDER

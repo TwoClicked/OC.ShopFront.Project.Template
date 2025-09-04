@@ -2,6 +2,7 @@
 @using OC.LUAC.UiLayer.DTO.Auth
 @using OC.LUAC.UiLayer.Services
 @inject AuthService AuthService
+@inject AdminAuthService AdminAuthService
 @inject NavigationManager Nav
 
 <!-- Centered floating content -->
@@ -24,15 +25,15 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Email</label>
                     <InputText @bind-Value="loginModel.Email"
-                               class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
-                               placeholder="Enter your email" />
+                    class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
+                    placeholder="Enter your email" />
                 </div>
 
                 <div class="mb-6">
                     <label class="block text-sm font-medium">Password</label>
                     <InputText @bind-Value="loginModel.Password" type="password"
-                               class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
-                               placeholder="Enter your password" />
+                    class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
+                    placeholder="Enter your password" />
                 </div>
 
                 <!-- Forgot password link -->
@@ -43,7 +44,7 @@
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
+                class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
                     Login
                 </button>
 
@@ -64,40 +65,40 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium">First Name</label>
                     <InputText @bind-Value="registerModel.FirstName"
-                               class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
-                               placeholder="First name" />
+                    class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
+                    placeholder="First name" />
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Last Name</label>
                     <InputText @bind-Value="registerModel.LastName"
-                               class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
-                               placeholder="Last name" />
+                    class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
+                    placeholder="Last name" />
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Email</label>
                     <InputText @bind-Value="registerModel.Email"
-                               class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
-                               placeholder="Email address" />
+                    class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
+                    placeholder="Email address" />
                 </div>
 
                 <InputText @bind-Value="registerModel.Password" type="password"
-                           class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
-                           minlength="6"
-                           placeholder="Password" />
+                class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2 placeholder-gray-400"
+                minlength="6"
+                placeholder="Password" />
 
                 <div class="mb-6">
                     <label class="block text-sm font-medium">Language</label>
                     <InputSelect @bind-Value="registerModel.Language"
-                                 class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2">
+                    class="mt-1 w-full rounded-md bg-black bg-opacity-50 text-white border border-neutral-500 p-2">
                         <option value="en">English</option>
                         <option value="de">Deutsch</option>
                     </InputSelect>
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
+                class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
                     Register
                 </button>
 
@@ -130,16 +131,32 @@
 
     private async Task HandleLogin()
     {
-        var success = await AuthService.LoginAsync(loginModel);
-        if (success)
+        // Try admin login first
+        var isAdmin = await AdminAuthService.LoginAsync(loginModel);
+        if (isAdmin)
+        {
+            Nav.NavigateTo("/admin", forceLoad: true);
+            return;
+        }
+
+        // If not admin → try customer login
+        var result = await AuthService.LoginAsync(loginModel);
+
+        if (result.Success)
         {
             Nav.NavigateTo("/", forceLoad: true);
+        }
+        else if (result.Disabled)
+        {
+            Message = "This account has been disabled. Please contact support.";
         }
         else
         {
             Message = "Invalid credentials";
         }
     }
+
+
 
     private async Task HandleRegister()
     {

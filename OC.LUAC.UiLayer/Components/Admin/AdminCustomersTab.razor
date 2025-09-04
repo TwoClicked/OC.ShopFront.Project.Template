@@ -1,0 +1,213 @@
+﻿@using OC.LUAC.UiLayer.DTO.AdminDashCustomer
+@inject HttpClient Http
+@inject AdminAuthService AdminAuth
+@inject NavigationManager Nav
+
+<div class="max-w-5xl mx-auto space-y-6 flex flex-col items-center">
+
+    <!-- Search -->
+    <div class="w-full flex justify-center py-3">
+        <input type="text"
+               @bind="searchTerm"
+               @bind:event="oninput"
+               placeholder="Search by email..."
+               class="w-1/3 px-4 py-3 rounded-md bg-neutral-800 border border-neutral-600 text-amber-600 placeholder-gray-500" />
+    </div>
+
+    <!-- Customers Table -->
+    <div class="w-full flex justify-center">
+        <table class="max-w-4xl w-full text-left text-sm border border-neutral-800 rounded-lg overflow-hidden">
+            <thead class="bg-neutral-800 text-amber-600 uppercase text-xs">
+                <tr>
+                    <th class="px-4 py-3">First Name</th>
+                    <th class="px-4 py-3">Last Name</th>
+                    <th class="px-4 py-3">Email</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (pagedCustomers.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-6 text-gray-500">
+                            No customers found
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var c in pagedCustomers)
+                    {
+                        <tr class="border-b border-neutral-700 hover:bg-neutral-800">
+                            <td class="px-4 py-3">@c.FirstName</td>
+                            <td class="px-4 py-3">@c.LastName</td>
+                            <td class="px-4 py-3">@c.Email</td>
+                            <td class="px-4 py-3 @(c.IsActive ? "text-green-500 font-semibold" : "text-red-500 font-semibold")">
+                                @(c.IsActive ? "Active" : "Deactivated")
+                            </td>
+                            <td class="px-4 py-3 text-right space-x-2">
+                                <button class="bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded text-sm"
+                                        @onclick="() => ViewOrders(c.Id)">
+                                    View Orders
+                                </button>
+                                @if (c.IsActive)
+                                {
+                                    <button class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm"
+                                            @onclick="() => DeactivateCustomer(c.Id)">
+                                        Deactivate
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm"
+                                            @onclick="() => ReactivateCustomer(c.Id)">
+                                        Reactivate
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- Pagination + Page Size -->
+    <div class="flex flex-col items-center space-y-2 mt-4 text-sm text-amber-600">
+
+        <!-- Page size selector -->
+        <div class="w-full flex justify-center">
+            <select class="w-full max-w-xs px-3 py-1 rounded bg-neutral-800 border border-neutral-600 text-amber-600 text-center"
+                    @onchange="OnPageSizeChanged">
+                <option value="8">8 per page</option>
+                <option value="16">16 per page</option>
+                <option value="24">24 per page</option>
+            </select>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center space-x-4">
+            <button @onclick="PrevPage" disabled="@(!CanPrevPage)"
+                    class="w-24 px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                Previous
+            </button>
+            <span class="text-amber-600">Page @currentPage of @totalPages</span>
+            <button @onclick="NextPage" disabled="@(!CanNextPage)"
+                    class="w-24 px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                Next
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<CustomerDto> allCustomers = new();
+    private List<CustomerDto> pagedCustomers = new();
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value ?? string.Empty;
+            currentPage = 1; // reset to first page on new search
+            ApplyFilters();
+        }
+    }
+
+    private int currentPage = 1;
+    private int pageSize = 8; // default
+    private int totalPages = 1;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadCustomers();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadCustomers()
+    {
+        var token = await AdminAuth.GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            allCustomers = await Http.GetFromJsonAsync<List<CustomerDto>>("customers") ?? new();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load customers: " + ex.Message);
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = string.IsNullOrWhiteSpace(searchTerm)
+            ? allCustomers
+            : allCustomers.Where(c => c.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        totalPages = (int)Math.Ceiling(filtered.Count / (double)pageSize);
+        if (currentPage > totalPages) currentPage = totalPages == 0 ? 1 : totalPages;
+
+        pagedCustomers = filtered
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            pageSize = size;
+            currentPage = 1; // reset to first page
+            ApplyFilters();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (currentPage > 1) currentPage--;
+        ApplyFilters();
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages) currentPage++;
+        ApplyFilters();
+    }
+
+    private void ViewOrders(int customerId)
+    {
+        Nav.NavigateTo($"/admin/customers/{customerId}/orders");
+    }
+
+    private async Task DeactivateCustomer(int id)
+    {
+        await Http.PutAsync($"customers/{id}/deactivate", null);
+        var customer = allCustomers.FirstOrDefault(c => c.Id == id);
+        if (customer != null) customer.IsActive = false;
+        ApplyFilters();
+    }
+
+    private async Task ReactivateCustomer(int id)
+    {
+        await Http.PutAsync($"customers/{id}/reactivate", null);
+        var customer = allCustomers.FirstOrDefault(c => c.Id == id);
+        if (customer != null) customer.IsActive = true;
+        ApplyFilters();
+    }
+
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < totalPages;
+}

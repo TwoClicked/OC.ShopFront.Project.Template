@@ -1,0 +1,92 @@
+﻿@using OC.LUAC.UiLayer.DTO.AdminDash
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Low stock -->
+    <div class="bg-neutral-800 p-6 rounded-2xl shadow">
+        <p class="text-gray-400">Low Stock Items</p>
+        <p class="text-2xl font-bold">@lowStockCount</p>
+    </div>
+
+    <!-- Active customers -->
+    <div class="bg-neutral-800 p-6 rounded-2xl shadow">
+        <p class="text-gray-400">Active Customers</p>
+        <p class="text-2xl font-bold">@activeCustomers</p>
+    </div>
+
+    <!-- Open chats -->
+    <div class="bg-neutral-800 p-6 rounded-2xl shadow">
+        <p class="text-gray-400">Open Chats</p>
+        <p class="text-2xl font-bold">@openChats</p>
+    </div>
+</div>
+
+<!-- Orders by status -->
+<div class="mt-8 bg-neutral-800 p-6 rounded-2xl shadow">
+    <h2 class="text-xl font-semibold mb-4">Orders by Status</h2>
+    <ul class="space-y-2">
+        <li class="flex justify-between">
+            <span class="text-gray-400">Pending Payment</span>
+            <span class="font-bold">@pendingOrders</span>
+        </li>
+        <li class="flex justify-between">
+            <span class="text-gray-400">Processing</span>
+            <span class="font-bold">@processingOrders</span>
+        </li>
+    </ul>
+</div>
+
+@code {
+    private int lowStockCount;
+    private int activeCustomers;
+    private int pendingOrders;
+    private int processingOrders;
+    private int openChats;
+
+    [Inject] private HttpClient Http { get; set; } = default!;
+    [Inject] private AdminAuthService AdminAuth { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadDashboardData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDashboardData()
+    {
+        var token = await AdminAuth.GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            // 1. Low stock
+            var lowStockResponse = await Http.GetFromJsonAsync<List<object>>("stock/low?threshold=5");
+            lowStockCount = lowStockResponse?.Count ?? 0;
+
+            // 2. Active customers
+            var customersResponse = await Http.GetFromJsonAsync<List<CustomerDto>>("customers");
+            activeCustomers = customersResponse?.Count(c => c.IsActive) ?? 0;
+
+            // 3. Orders by status
+            var ordersResponse = await Http.GetFromJsonAsync<OrdersPagedResponse>("orders/all?page=1&pageSize=200");
+            if (ordersResponse?.Items != null)
+            {
+                pendingOrders = ordersResponse.Items.Count(o => o.Status == "PendingPayment");
+                processingOrders = ordersResponse.Items.Count(o => o.Status == "Processing");
+            }
+
+            // 4. Open chats
+            var chatsResponse = await Http.GetFromJsonAsync<List<ChatSessionDto>>("chat/sessions/active");
+            openChats = chatsResponse?.Count ?? 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Dashboard load failed: " + ex.Message);
+        }
+    }
+
+}

@@ -86,18 +86,22 @@ namespace OC.LUAC.ServiceLayer.Services
         public async Task<Customer?> LoginAsync(string email, string password)
         {
             var user = await _context.Customers
-                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
 
-            if (user == null || !ValidatePassword(password, user.PasswordHash))
+            if (user == null) return null;
+
+            // Validate password
+            if (!ValidatePassword(password, user.PasswordHash))
             {
                 return null;
             }
 
-            user.LastLoginAt = DateTime.UtcNow; // use UTC for consistency
-            await _context.SaveChangesAsync();  // persist the change
+            user.LastLoginAt = DateTime.UtcNow; // update login time
+            await _context.SaveChangesAsync();
 
-            return user; // Return the user if credentials are valid
+            return user;
         }
+
 
         /// <summary>
         /// Registers a new customer by saving their details and hashing their password.
@@ -281,6 +285,11 @@ namespace OC.LUAC.ServiceLayer.Services
 
             return resetToken;
         }
+        public async Task<List<Customer>> GetAllCustomersAsync()
+        {
+            return await _context.Customers.ToListAsync();
+        }
+
 
         public async Task<bool> ResetPasswordAsync(string token, string newPassword)
         {

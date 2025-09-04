@@ -12,6 +12,7 @@ builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<ShippingService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AdminAuthService>();
 
 
 

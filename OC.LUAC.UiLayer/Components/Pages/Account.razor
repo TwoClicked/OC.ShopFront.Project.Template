@@ -1,4 +1,5 @@
 ﻿@page "/account"
+@using OC.LUAC.UiLayer.DTO.AdminDash
 @using OC.LUAC.UiLayer.DTO.Auth
 @using OC.LUAC.UiLayer.DTO.Order
 @using OC.LUAC.UiLayer.Services
@@ -31,32 +32,32 @@
                     <div class="mb-4">
                         <label class="block text-sm font-medium">First Name</label>
                         <InputText @bind-Value="profile.FirstName"
-                                   class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                        class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                     </div>
 
                     <div class="mb-4">
                         <label class="block text-sm font-medium">Last Name</label>
                         <InputText @bind-Value="profile.LastName"
-                                   class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                        class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                     </div>
 
                     <div class="mb-4">
                         <label class="block text-sm font-medium">Email (read-only)</label>
                         <input value="@profile.Email" disabled
-                               class="mt-1 w-full rounded-md bg-neutral-700 text-gray-400 p-2" />
+                        class="mt-1 w-full rounded-md bg-neutral-700 text-gray-400 p-2" />
                     </div>
 
                     <div class="mb-6">
                         <label class="block text-sm font-medium">Language</label>
                         <InputSelect @bind-Value="profile.Language"
-                                     class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2">
+                        class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2">
                             <option value="en">English</option>
                             <option value="de">German</option>
                         </InputSelect>
                     </div>
 
                     <button type="submit"
-                            class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
+                    class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
                         Save Changes
                     </button>
                 </EditForm>
@@ -73,22 +74,22 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Old Password</label>
                     <InputText @bind-Value="passwordModel.OldPassword" type="password"
-                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                    class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium">New Password</label>
                     <InputText @bind-Value="passwordModel.NewPassword" type="password"
-                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                    class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Confirm Password</label>
                     <InputText @bind-Value="passwordModel.ConfirmPassword" type="password"
-                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                    class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
+                class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
                     Change Password
                 </button>
             </EditForm>
@@ -123,7 +124,7 @@
                             <tr class="border-b border-neutral-800">
                                 <td class="py-2 px-4 font-semibold">@order.OrderNumber</td>
                                 <td class="py-2 px-4">@order.CreatedAt.ToString("dd/MM/yyyy")</td>
-                                <td class="py-2 px-4">@order.Total.ToString("C")</td>
+                                <td class="py-2 px-4">@order.TotalAfterDiscount.ToString("C")</td>
                                 <td class="py-2 px-4">
                                     @if (order.Status == "Cancelled")
                                     {
@@ -138,7 +139,7 @@
                                     @if (order.Status == "PendingPayment")
                                     {
                                         <button @onclick="() => CancelOrder(order.Id)"
-                                                class="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700">
+                                        class="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700">
                                             Cancel
                                         </button>
                                     }
@@ -160,13 +161,13 @@
 
                 <!-- Input confirmation -->
                 <input @bind="deleteConfirmation"
-                       placeholder='Type "delete" to confirm'
-                       class="w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                placeholder='Type "delete" to confirm'
+                class="w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
 
                 <!-- Delete button -->
                 <button @onclick="ConfirmDelete"
-                        disabled="@(!CanDelete)"
-                        class="w-full py-2 px-4 rounded-md transition-colors
+                disabled="@(!CanDelete)"
+                class="w-full py-2 px-4 rounded-md transition-colors
                                @(CanDelete ? "bg-red-600 hover:bg-red-700 text-white" : "bg-neutral-700 text-gray-400 cursor-not-allowed")">
                     Delete Account
                 </button>
@@ -175,7 +176,7 @@
 
         @if (!string.IsNullOrEmpty(Message))
         {
-            <p class="text-center text-red-500 mt-3">@Message</p>
+            <p class="text-center @MessageCss">@Message</p>
         }
     </div>
 </section>
@@ -183,9 +184,10 @@
 @code {
     private string ActiveTab { get; set; } = "profile";
     private CustomerProfileDto? profile;
-    private List<OrderDto>? orders;
+    private List<AdminOrderSummaryDto>? orders;
     private ChangePasswordFormDto passwordModel = new();
     private string? Message;
+    private string MessageCss { get; set; }
 
     private string deleteConfirmation = string.Empty;
     private bool CanDelete => deleteConfirmation.Equals("delete", StringComparison.OrdinalIgnoreCase);
@@ -250,7 +252,16 @@
             };
 
         var success = await AuthService.ChangePasswordAsync(dto);
-        Message = success ? "✅ Password changed!" : "❌ Failed to change password.";
+        if (success)
+        {
+            Message = "✅ Password changed!";
+            MessageCss = "text-green-500";
+        }
+        else
+        {
+            Message = "❌ Failed to change password.";
+            MessageCss = "text-red-500";
+        }
         passwordModel = new(); // reset form
     }
 

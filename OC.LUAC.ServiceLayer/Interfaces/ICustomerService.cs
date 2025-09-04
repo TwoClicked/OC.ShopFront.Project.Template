@@ -17,5 +17,6 @@ public interface ICustomerService
     Task<bool> DeactivateCustomerAsync(int id);
     Task<bool> ReactivateCustomerAsync(int id);
     Task<PasswordResetToken?> CreatePasswordResetTokenAsync(string email);
+    Task<List<Customer>> GetAllCustomersAsync();
     Task<bool> ResetPasswordAsync(string token, string newPassword);
 }

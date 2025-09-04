@@ -1,0 +1,284 @@
+﻿@page "/admin/customers/{customerId:int}/orders"
+@using OC.LUAC.UiLayer.DTO.AdminDash
+@using OC.LUAC.UiLayer.DTO.Order
+@inject HttpClient Http
+@inject AdminAuthService AdminAuth
+@inject NavigationManager Nav
+
+<h2 class="text-2xl font-bold mb-6 text-amber-600">
+    Orders for
+    @if (customer != null)
+    {
+        <span>@customer.FirstName @customer.LastName (@customer.Email)</span>
+    }
+</h2>
+
+<!-- Search + Page Size -->
+<div class="flex justify-between items-center mb-4">
+    <input type="text"
+           @bind="searchTerm"
+           @bind:event="oninput"
+           placeholder="ORD-XXXX"
+           class="px-4 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400 placeholder-gray-500 w-1/3" />
+
+    <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400"
+            @onchange="OnPageSizeChanged">
+        <option value="8">8 per page</option>
+        <option value="16">16 per page</option>
+        <option value="24">24 per page</option>
+    </select>
+</div>
+
+@if (pagedOrders == null)
+{
+    <p class="text-gray-400">Loading orders...</p>
+}
+else if (pagedOrders.Count == 0)
+{
+    <p class="text-gray-400">No matching orders found.</p>
+}
+else
+{
+    <div class="space-y-6">
+        @foreach (var order in pagedOrders)
+        {
+            <div class="bg-neutral-800 rounded-lg p-6 shadow space-y-4">
+
+                <!-- Header -->
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-amber-600">Order @order.OrderNumber</h3>
+                    <span class="px-3 py-1 rounded text-sm font-semibold
+                                 @(order.Status == "Shipped" ? "bg-green-700 text-green-200" :
+                                   order.Status == "Cancelled" ? "bg-red-700 text-red-200" :
+                                   order.Status == "Processing" ? "bg-blue-700 text-blue-200" :
+                                   "bg-yellow-700 text-yellow-200")">
+                        @order.Status
+                    </span>
+                </div>
+
+                <p class="text-sm text-gray-400">Placed: @order.CreatedAt.ToLocalTime().ToString("g")</p>
+
+                <!-- Shipping Info -->
+                <div class="bg-neutral-900 rounded p-4 text-sm space-y-1">
+                    <p><span class="text-amber-600">Shipping information:</span></p>
+                    <p><span class="text-gray-400">Address:</span> @order.ShippingAddress</p>
+                    <p><span class="text-gray-400">City:</span> @order.ShippingCity</p>
+                    <p><span class="text-gray-400">Postal Code:</span> @order.ShippingPostalCode</p>
+                    <p><span class="text-gray-400">Country:</span> @order.ShippingCountry</p>
+                </div>
+
+                <!-- Tracking Info -->
+                @if (!string.IsNullOrEmpty(order.TrackingNumber))
+                {
+                    <div class="bg-neutral-900 rounded p-4 text-sm space-y-1">
+                        <p><span class="text-gray-400">Tracking Number:</span> @order.TrackingNumber</p>
+                        @if (!string.IsNullOrEmpty(order.TrackingUrl))
+                        {
+                            <p>
+                                <a href="@order.TrackingUrl" target="_blank"
+                                   class="text-amber-600 hover:underline">
+                                    Track Package
+                                </a>
+                            </p>
+                        }
+                    </div>
+                }
+
+                <!-- Order Items -->
+                <table class="w-full text-sm text-amber-600 border-t border-neutral-700 mb-4">
+                    <thead class="text-left text-gray-400 uppercase text-xs">
+                        <tr>
+                            <th class="py-2">Product</th>
+                            <th class="py-2">Size</th>
+                            <th class="py-2">Quantity</th>
+                            <th class="py-2">Unit Price</th>
+                            <th class="py-2">Line Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in order.Items)
+                        {
+                            <tr class="border-t border-neutral-700">
+                                <td class="py-2">@item.ProductName</td>
+                                <td class="py-2">@item.Size</td>
+                                <td class="py-2">@item.Quantity</td>
+                                <td class="py-2">@item.UnitPrice.ToString("C")</td>
+                                <td class="py-2">@((item.Quantity * item.UnitPrice).ToString("C"))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- Totals -->
+                <div class="bg-neutral-900 rounded p-4 space-y-2 text-sm">
+                    <p class="flex justify-between">
+                        <span class="text-gray-400">Subtotal:</span>
+                        <span class="text-amber-600">@order.Subtotal.ToString("C")</span>
+                    </p>
+                    @if (order.Discount > 0)
+                    {
+                        <p class="flex justify-between text-red-400">
+                            <span>Discount:</span>
+                            <span>-@order.Discount.ToString("C")</span>
+                        </p>
+                    }
+                    <p class="flex justify-between">
+                        <span class="text-gray-400">Shipping:</span>
+                        <span class="text-amber-600">@order.ShippingCost</span>
+                    </p>
+                    <hr class="border-neutral-700" />
+                    <p class="flex justify-between font-semibold">
+                        <span>Total:</span>
+                        <span class="text-amber-500">@order.TotalAfterDiscount.ToString("C")</span>
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex flex-col items-center space-y-2 mt-6 text-sm text-gray-400">
+        <div class="flex items-center space-x-4">
+            <button @onclick="PrevPage" disabled="@(!CanPrevPage)"
+                    class="w-24 px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                Previous
+            </button>
+            <span class="text-amber-400">Page @currentPage of @totalPages</span>
+            <button @onclick="NextPage" disabled="@(!CanNextPage)"
+                    class="w-24 px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                Next
+            </button>
+        </div>
+    </div>
+}
+
+<button class="mt-6 bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded"
+        @onclick="@(() => Nav.NavigateTo("/admin?tab=Customers", true))">
+    Back to Customers
+</button>
+
+@code {
+    [Parameter] public int CustomerId { get; set; }
+    private List<AdminOrderSummaryDto> allOrders = new();
+    private List<AdminOrderSummaryDto> pagedOrders = new();
+    private CustomerProfileDto? customer;
+
+    private string _searchTerm = "ORD-";
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value ?? "ORD-";
+            currentPage = 1;
+            ApplyFilters();
+        }
+    }
+
+    private int currentPage = 1;
+    private int pageSize = 8;
+    private int totalPages = 1;
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            await LoadCustomer();
+            await LoadOrders();
+            _initialized = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadCustomer()
+    {
+        var token = await AdminAuth.GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            customer = await Http.GetFromJsonAsync<CustomerProfileDto>($"customers/{CustomerId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load customer details: " + ex.Message);
+        }
+    }
+
+    private async Task LoadOrders()
+    {
+        var token = await AdminAuth.GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            allOrders = await Http.GetFromJsonAsync<List<AdminOrderSummaryDto>>(
+                $"customers/{CustomerId}/orders"
+            ) ?? new();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load customer orders: " + ex.Message);
+            allOrders = new();
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        // Filter
+        var filtered = string.IsNullOrWhiteSpace(searchTerm) || searchTerm == "ORD-"
+            ? allOrders
+            : allOrders.Where(o => o.OrderNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        // Sort by status
+        filtered = filtered
+            .OrderBy(o => o.Status == "Pending" ? 0 :
+                          o.Status == "Processing" ? 1 :
+                          o.Status == "Shipped" ? 2 :
+                          o.Status == "Cancelled" ? 3 : 4)
+            .ThenByDescending(o => o.CreatedAt)
+            .ToList();
+
+        // Pagination
+        totalPages = (int)Math.Ceiling(filtered.Count / (double)pageSize);
+        if (currentPage > totalPages) currentPage = totalPages == 0 ? 1 : totalPages;
+
+        pagedOrders = filtered
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            pageSize = size;
+            currentPage = 1;
+            ApplyFilters();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (currentPage > 1) currentPage--;
+        ApplyFilters();
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages) currentPage++;
+        ApplyFilters();
+    }
+
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < totalPages;
+}

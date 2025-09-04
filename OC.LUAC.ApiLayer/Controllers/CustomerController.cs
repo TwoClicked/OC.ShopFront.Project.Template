@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OC.LUAC.ApiLayer.Auth;
 using OC.LUAC.ApiLayer.DTO.Customer;
+using OC.LUAC.ApiLayer.DTO.Order;
 using OC.LUAC.ObjectLayer.Accounts;
 using OC.LUAC.ObjectLayer.Orders;
 using OC.LUAC.ServiceLayer.Interfaces;
@@ -54,11 +55,18 @@ public class CustomerController : ControllerBase
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         var customer = await _customers.LoginAsync(dto.Email, dto.Password);
-        if (customer == null) return Unauthorized();
+
+        if (customer == null)
+            return Unauthorized(new { message = "Invalid credentials" }); // check null first 
+
+        if (!customer.IsActive)
+            return StatusCode(403, new { message = "AccountDisabled" }); // only safe to check after null guard 
 
         var token = _tokens.CreateCustomerToken(customer);
         return Ok(new LoginResponseDto { Token = token, Customer = customer });
     }
+
+
 
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
@@ -85,6 +93,7 @@ public class CustomerController : ControllerBase
     // ADMIN ENDPOINTS
     // =========================
 
+    [Authorize(Roles = "Admin")]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Customer>> GetById(int id)
     {
@@ -100,12 +109,54 @@ public class CustomerController : ControllerBase
         return ok ? NoContent() : NotFound();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpGet("{id:int}/orders")]
-    public async Task<ActionResult<List<Order>>> GetOrdersForCustomer(int id)
+    public async Task<ActionResult<List<OrderSummaryDto>>> GetOrdersForCustomer(int id)
     {
         var orders = await _orders.GetOrdersByCustomerIdAsync(id);
-        return Ok(orders);
+        if (orders == null || !orders.Any()) return Ok(new List<OrderSummaryDto>());
+
+        var result = orders.Select(o => new OrderSummaryDto
+        {
+            Id = o.Id,
+            OrderNumber = o.OrderNumber,
+            Status = o.Status.ToString(),
+            CreatedAt = o.CreatedAt,
+
+            // Totals
+            Subtotal = o.TotalBeforeDiscount,
+            Discount = o.DiscountAmount ?? 0,
+            ShippingCost = o.ShippingCost,
+            TotalAfterDiscount = o.TotalAfterDiscount,
+
+            // Customer Info
+            CustomerName = o.Customer?.FirstName + " " + o.Customer?.LastName,
+            CustomerEmail = o.Customer?.Email,
+
+            // Shipping Info
+            ShippingAddress = $"{o.ShippingStreet} {o.ShippingNumber}",
+            ShippingCity = o.ShippingCity,
+            ShippingPostalCode = o.ShippingPostalCode,
+            ShippingCountry = o.ShippingCountry,
+
+            // Tracking
+            TrackingNumber = o.TrackingNumber,
+            TrackingUrl = o.TrackingUrl,
+
+            // Items
+            Items = o.Items.Select(i => new OrderItemDto
+            {
+                ProductName = i.ProductName,
+                Size = i.Size,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice
+            }).ToList()
+        }).ToList();
+
+        return Ok(result);
     }
+
+
 
     [Authorize(Roles = "Admin")]
     [HttpPut("{id:int}/deactivate")]
@@ -122,6 +173,16 @@ public class CustomerController : ControllerBase
         var ok = await _customers.ReactivateCustomerAsync(id);
         return ok ? Ok(new { status = "Reactivated" }) : NotFound();
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Customer>>> GetAll()
+    {
+        var customers = await _customers.GetAllCustomersAsync();
+        var active = customers.Where(c => !c.IsDeleted).ToList();
+        return Ok(active);
+    }
+
 
     // =========================
     // SELF-SERVICE ENDPOINTS
