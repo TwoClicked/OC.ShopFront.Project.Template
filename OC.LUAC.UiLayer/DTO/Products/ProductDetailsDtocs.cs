@@ -21,7 +21,7 @@ namespace OC.LUAC.UiLayer.DTO.Products
         public decimal Price { get; set; }
 
         [JsonPropertyName("thumbnailUrl")]
-        public string? ThumbnailUrl { get; set; }   // 🔹 this was missing!
+        public string? ThumbnailUrl { get; set; }
 
         [JsonPropertyName("images")]
         public List<ProductImageDto> Images { get; set; } = new();

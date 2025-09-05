@@ -16,6 +16,7 @@ public class OrderSummaryDto
     // Customer Info
     public string CustomerName { get; set; } = string.Empty;
     public string CustomerEmail { get; set; } = string.Empty;
+    public bool IsGuest { get; set; }
 
     // Shipping Info
     public string ShippingAddress { get; set; } = string.Empty;

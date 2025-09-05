@@ -28,11 +28,26 @@ namespace OC.LUAC.UiLayer.Services
         // ====================
         // REGISTER
         // ====================
-        public async Task<bool> RegisterAsync(RegisterDto dto)
+        public async Task<(bool Success, string? Status, string? Message)> RegisterAsync(RegisterDto dto)
         {
             var response = await _http.PostAsJsonAsync("customers/register", dto);
-            return response.IsSuccessStatusCode;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, null, error);
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+            if (result != null && result.TryGetValue("status", out var status))
+            {
+                string? msg = result.ContainsKey("message") ? result["message"]?.ToString() : null;
+                return (true, status?.ToString(), msg);
+            }
+
+            return (true, null, null); // fallback
         }
+
 
         // ====================
         // LOGIN

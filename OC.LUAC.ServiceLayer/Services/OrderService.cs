@@ -51,6 +51,7 @@ namespace OC.LUAC.ServiceLayer.Services
         {
             return await _context.Orders
                 .Where(o => o.CustomerId == customerId)
+                .Include(o => o.Customer)
                 .Include(o => o.Items)
                 .ToListAsync();
         }
@@ -63,6 +64,7 @@ namespace OC.LUAC.ServiceLayer.Services
         public async Task<Order?> GetOrderByIdAsync(int orderId, bool includeDeleted = false)
         {
             return await _context.Orders
+                .Include(o => o.Customer)
                 .Include(o => o.Items)
                 .FirstOrDefaultAsync(o =>
                     o.Id == orderId && (includeDeleted || !o.IsDeleted));

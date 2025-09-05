@@ -4,22 +4,44 @@
 @inject HttpClient Http
 @inject AdminAuthService AdminAuth
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <h2 class="text-2xl font-bold mb-6 text-amber-600">
     Orders for
     @if (customer != null)
     {
         <span>@customer.FirstName @customer.LastName (@customer.Email)</span>
+
+        @if (customer.IsGuest)
+        {
+            <span class="text-2xl font-bold mb-6 text-yellow-200"> - Guest Account</span>
+        }
+        else
+        {
+            <span class="text-2xl font-bold mb-6 text-yellow-200"> - Registered Account</span>
+        }
     }
 </h2>
 
-<!-- Search + Page Size -->
-<div class="flex justify-between items-center mb-4">
+<!-- Filters -->
+<div class="flex justify-between items-center mb-4 space-x-4">
     <input type="text"
            @bind="searchTerm"
            @bind:event="oninput"
-           placeholder="ORD-XXXX"
+           placeholder="OrderNumber"
            class="px-4 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400 placeholder-gray-500 w-1/3" />
+
+    <div class="flex space-x-4 text-sm text-gray-300">
+        @foreach (var status in allStatuses)
+        {
+            <label class="flex items-center space-x-1">
+                <input type="checkbox" checked="@selectedStatuses.Contains(status)"
+                       @onchange="e => ToggleStatus(status, e.Value as bool?)"
+                       class="form-checkbox bg-neutral-700 border-neutral-500 text-amber-500" />
+                <span>@status</span>
+            </label>
+        }
+    </div>
 
     <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400"
             @onchange="OnPageSizeChanged">
@@ -84,7 +106,7 @@ else
                     </div>
                 }
 
-                <!-- Order Items -->
+                <!-- Items -->
                 <table class="w-full text-sm text-amber-600 border-t border-neutral-700 mb-4">
                     <thead class="text-left text-gray-400 uppercase text-xs">
                         <tr>
@@ -132,6 +154,41 @@ else
                         <span class="text-amber-500">@order.TotalAfterDiscount.ToString("C")</span>
                     </p>
                 </div>
+
+                <!-- Admin Actions -->
+                @if (order.Status == "PendingPayment")
+                {
+                    <div class="flex space-x-4 mt-4">
+                        <button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+                                @onclick="() => ConfirmAndMarkPaid(order.Id)">
+                            Mark Paid
+                        </button>
+                        <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm"
+                                @onclick="() => ConfirmAndCancel(order.Id, order.Status)">
+                            Cancel
+                        </button>
+                    </div>
+                }
+                else if (order.Status == "Processing")
+                {
+                    <div class="space-y-2 mt-4 ">
+                        <input type="text" placeholder="Tracking Number"
+                               @bind="order.TrackingNumber"
+                               class="w-1/3 px-3 py-2 rounded bg-neutral-800 border border-neutral-600 text-amber-400" />
+                        <input type="text" placeholder="Tracking URL"
+                               @bind="order.TrackingUrl"
+                               class="w-1/2 px-3 py-2 rounded bg-neutral-800 border border-neutral-600 text-amber-400" />
+                        <button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+                                @onclick="() => ConfirmAndMarkShipped(order.Id, order.TrackingNumber, order.TrackingUrl)">
+                            Mark Shipped
+                        </button>
+
+                        <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm"
+                                @onclick="() => ConfirmAndCancel(order.Id, order.Status)">
+                            Cancel
+                        </button>
+                    </div>
+                }
             </div>
         }
     </div>
@@ -163,17 +220,20 @@ else
     private List<AdminOrderSummaryDto> pagedOrders = new();
     private CustomerProfileDto? customer;
 
-    private string _searchTerm = "ORD-";
+    private string _searchTerm = "";
     private string searchTerm
     {
         get => _searchTerm;
         set
         {
-            _searchTerm = value ?? "ORD-";
+            _searchTerm = value ?? "";
             currentPage = 1;
             ApplyFilters();
         }
     }
+
+    private readonly string[] allStatuses = { "PendingPayment", "Processing", "Shipped", "Cancelled" };
+    private HashSet<string> selectedStatuses = new() { "PendingPayment", "Processing", "Shipped", "Cancelled" };
 
     private int currentPage = 1;
     private int pageSize = 8;
@@ -233,21 +293,20 @@ else
 
     private void ApplyFilters()
     {
-        // Filter
         var filtered = string.IsNullOrWhiteSpace(searchTerm) || searchTerm == "ORD-"
             ? allOrders
             : allOrders.Where(o => o.OrderNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
 
-        // Sort by status
+        filtered = filtered.Where(o => selectedStatuses.Contains(o.Status)).ToList();
+
         filtered = filtered
-            .OrderBy(o => o.Status == "Pending" ? 0 :
+            .OrderBy(o => o.Status == "PendingPayment" ? 0 :
                           o.Status == "Processing" ? 1 :
                           o.Status == "Shipped" ? 2 :
                           o.Status == "Cancelled" ? 3 : 4)
             .ThenByDescending(o => o.CreatedAt)
             .ToList();
 
-        // Pagination
         totalPages = (int)Math.Ceiling(filtered.Count / (double)pageSize);
         if (currentPage > totalPages) currentPage = totalPages == 0 ? 1 : totalPages;
 
@@ -255,6 +314,17 @@ else
             .Skip((currentPage - 1) * pageSize)
             .Take(pageSize)
             .ToList();
+    }
+
+    private void ToggleStatus(string status, bool? isChecked)
+    {
+        if (isChecked == true)
+            selectedStatuses.Add(status);
+        else
+            selectedStatuses.Remove(status);
+
+        currentPage = 1;
+        ApplyFilters();
     }
 
     private void OnPageSizeChanged(ChangeEventArgs e)
@@ -281,4 +351,63 @@ else
 
     private bool CanPrevPage => currentPage > 1;
     private bool CanNextPage => currentPage < totalPages;
+
+    // === Admin Actions ===
+    private async Task<bool> Confirm(string message)
+    {
+        return await JS.InvokeAsync<bool>("confirm", message);
+    }
+
+    private async Task ConfirmAndMarkPaid(int orderId)
+    {
+        if (await Confirm("Are you sure you want to mark this order as PAID?"))
+        {
+            await MarkPaid(orderId);
+        }
+    }
+
+    private async Task ConfirmAndCancel(int orderId, string status)
+    {
+        if (await Confirm("Are you sure you want to CANCEL this order?"))
+        {
+            await CancelOrder(orderId, status);
+        }
+    }
+
+    private async Task ConfirmAndMarkShipped(int orderId, string trackingNumber, string trackingUrl)
+    {
+        if (string.IsNullOrWhiteSpace(trackingNumber) || string.IsNullOrWhiteSpace(trackingUrl))
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in both Tracking Number and Tracking URL before shipping.");
+            return;
+        }
+
+        if (await Confirm("Are you sure you want to mark this order as SHIPPED?"))
+        {
+            await MarkShipped(orderId, trackingNumber, trackingUrl);
+        }
+    }
+
+    private async Task MarkPaid(int orderId)
+    {
+        await Http.PutAsync($"orders/{orderId}/mark-paid", null);
+        await LoadOrders();
+    }
+
+    private async Task CancelOrder(int orderId, string status)
+    {
+        string url = status == "Processing"
+            ? $"orders/{orderId}/cancel-processing"
+            : $"orders/{orderId}/cancel-nopayment";
+
+        await Http.PutAsync(url, null);
+        await LoadOrders();
+    }
+
+    private async Task MarkShipped(int orderId, string trackingNumber, string trackingUrl)
+    {
+        var payload = new { TrackingNumber = trackingNumber, TrackingUrl = trackingUrl };
+        await Http.PutAsJsonAsync($"orders/{orderId}/ship", payload);
+        await LoadOrders();
+    }
 }

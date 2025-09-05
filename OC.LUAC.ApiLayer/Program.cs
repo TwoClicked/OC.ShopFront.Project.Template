@@ -75,19 +75,6 @@ app.UseHttpsRedirection();
 // Default wwwroot
 app.UseStaticFiles();
 
-// Add /uploads folder explicitly
-var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-
-if (!Directory.Exists(uploadsPath))
-{
-    Directory.CreateDirectory(uploadsPath);
-}
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads"
-});
 
 app.UseCors("dev");
 

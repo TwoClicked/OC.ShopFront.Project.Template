@@ -19,7 +19,7 @@ namespace OC.LUAC.ObjectLayer.Accounts
 
 
         public string Email { get; set; } // Email of the customer
-        public string PasswordHash { get; set; } // Hashed password for security
+        public string? PasswordHash { get; set; } // Hashed password for security
 
         public string FirstName { get; set; } // First name of the customer
         public string LastName { get; set; } // Last name of the customer
@@ -29,13 +29,12 @@ namespace OC.LUAC.ObjectLayer.Accounts
         public DateTime CreatedAt { get; set; } = DateTime.Now; // Timestamp for when the customer was created
         public DateTime? LastLoginAt { get; set; } // Timestamp for the last login, nullable if never logged in
 
-
+        public bool IsGuest { get; set; } = true; // Default to guest, switched to false on registration
 
         // Account status
         public bool IsActive { get; set; } = true; // NEW - for admin suspend/reactivate
 
         // GDPR Soft delete support
-
         public bool IsDeleted { get; set; } = false; // Flag to indicate if the customer is deleted
         public DateTime? DeletedAt { get; set; } // Timestamp for when the customer was deleted, nullable if not deleted
 

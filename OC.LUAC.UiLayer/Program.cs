@@ -2,19 +2,17 @@ using OC.LUAC.UiLayer.Components;
 using OC.LUAC.UiLayer.Services;
 using Blazored.LocalStorage;
 using System.Text.Json;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//Ui layer service injections (Might make a UI Di class for this later)
-
+// Ui layer service injections (Might make a UI Di class for this later)
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<ShippingService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AdminAuthService>();
-
-
 
 // ---- HttpClient Setup ----
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
@@ -51,7 +49,23 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Serve default wwwroot
 app.UseStaticFiles();
+
+// Explicitly serve /uploads folder
+var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()

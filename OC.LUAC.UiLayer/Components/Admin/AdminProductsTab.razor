@@ -1,0 +1,251 @@
+﻿@using OC.LUAC.UiLayer.DTO.AdminDash
+@using OC.LUAC.UiLayer.DTO.Products
+@inject IConfiguration Config
+@inject HttpClient Http
+@inject AdminAuthService AdminAuth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h2 class="text-2xl font-bold mb-6 text-amber-600">Products</h2>
+
+<!-- Toolbar -->
+<div class="flex justify-between items-center mb-4 space-x-4">
+    <input type="text"
+           @bind="searchTerm"
+           @bind:event="oninput"
+           placeholder="Search products..."
+           class="px-4 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400 placeholder-gray-500 w-1/3" />
+
+    <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400"
+            @onchange="OnCategoryChanged">
+        <option value="">All Categories</option>
+        <option value="Pullovers">Pullovers</option>
+        <option value="T-Shirts">T-Shirts</option>
+        <option value="Accesories">Accesories</option>
+    </select>
+
+    <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400"
+            @onchange="OnPageSizeChanged">
+        <option value="8">8 per page</option>
+        <option value="16">16 per page</option>
+        <option value="24">24 per page</option>
+    </select>
+
+    <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded"
+            @onclick='() => Nav.NavigateTo("/admin/products/new")'>
+        + Add Product
+    </button>
+</div>
+
+@if (pagedProducts == null)
+{
+    <p class="text-gray-400">Loading products...</p>
+}
+else if (!pagedProducts.Any())
+{
+    <p class="text-gray-400">No products found.</p>
+}
+else
+{
+    <table class="w-full text-sm border-collapse">
+        <thead class="bg-neutral-900 text-gray-400 uppercase text-xs">
+            <tr>
+                <th class="px-3 py-2">Thumbnail</th>
+                <th class="px-3 py-2">Name</th>
+                <th class="px-3 py-2">Price</th>
+                <th class="px-3 py-2">Category</th>
+                <th class="px-3 py-2">Featured</th>
+                <th class="px-3 py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in pagedProducts)
+            {
+                <tr class="border-b border-neutral-700">
+                    <td class="px-3 py-2">
+                        @if (!string.IsNullOrEmpty(p.ThumbnailUrl))
+                        {
+                            <img src="@($"{Config["ApiBaseUrl"]!.TrimEnd('/')}{p.ThumbnailUrl}")"
+                                 class="w-16 h-16 object-cover rounded border border-neutral-700" />
+                        }
+                        else
+                        {
+                            <span class="text-gray-500">No Image</span>
+                        }
+                    </td>
+                    <td class="px-3 py-2">@p.Name_En</td>
+                    <td class="px-3 py-2">@p.Price.ToString("C")</td>
+                    <td class="px-3 py-2">@p.CategoryName_En</td>
+                    <td class="px-3 py-2">
+                        @if (p.IsFeatured)
+                        {
+                            <span class="text-green-400">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="text-gray-500">No</span>
+                        }
+                    </td>
+                    <td class="px-3 py-2 space-x-2">
+                        <button class="text-amber-500 hover:underline"
+                                @onclick='() => Nav.NavigateTo($"/admin/products/{p.Id}")'>
+                            Edit
+                        </button>
+                        <button class="text-red-500 hover:underline"
+                                @onclick="() => ConfirmAndDelete(p.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="flex flex-col items-center space-y-2 mt-6 text-sm text-gray-400">
+        <div class="flex items-center space-x-4">
+            <button @onclick="PrevPage" disabled="@(!CanPrevPage)"
+                    class="w-24 px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                Previous
+            </button>
+            <span class="text-amber-400">Page @currentPage of @totalPages</span>
+            <button @onclick="NextPage" disabled="@(!CanNextPage)"
+                    class="w-24 px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                Next
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ProductDto> allProducts = new();
+    private List<ProductDto> pagedProducts = new();
+
+    private string _searchTerm = "";
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                ApplyFilters();
+            }
+        }
+    }
+
+    private string selectedCategory = "";
+    private int currentPage = 1;
+    private int pageSize = 8;
+    private int totalPages = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        var token = await AdminAuth.GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var result = await Http.GetFromJsonAsync<PagedResult<ProductDto>>(
+                "products?page=1&pageSize=500");
+
+            if (result != null)
+            {
+                allProducts = result.Items ?? new();
+                ApplyFilters();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load products: " + ex.Message);
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = allProducts;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filtered = filtered.Where(p =>
+                p.Name_En.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (p.CategoryName_En?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedCategory))
+        {
+            filtered = filtered
+                .Where(p => string.Equals(p.CategoryName_En, selectedCategory, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        totalPages = Math.Max(1, (int)Math.Ceiling(filtered.Count / (double)pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        pagedProducts = filtered
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void OnCategoryChanged(ChangeEventArgs e)
+    {
+        selectedCategory = e.Value?.ToString() ?? "";
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            pageSize = size;
+            currentPage = 1;
+            ApplyFilters();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (currentPage > 1) currentPage--;
+        ApplyFilters();
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages) currentPage++;
+        ApplyFilters();
+    }
+
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < totalPages;
+
+    private async Task<bool> Confirm(string message)
+    {
+        return await JS.InvokeAsync<bool>("confirm", message);
+    }
+
+    private async Task ConfirmAndDelete(int productId)
+    {
+        if (await Confirm("Are you sure you want to DELETE this product?"))
+        {
+            await DeleteProduct(productId);
+        }
+    }
+
+    private async Task DeleteProduct(int productId)
+    {
+        await Http.DeleteAsync($"products/{productId}");
+        await LoadProducts();
+    }
+}

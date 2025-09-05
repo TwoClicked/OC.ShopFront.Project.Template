@@ -27,9 +27,6 @@
         case "Customers":
             <AdminCustomersTab />
             break;
-        case "Orders":
-            <AdminOrdersTab />
-            break;
         case "Products":
             <AdminProductsTab />
             break;
@@ -52,7 +49,7 @@
     private string activeTab = "Dashboard";
     private readonly List<string> tabs = new()
     {
-        "Dashboard", "Customers", "Orders", "Products", "Vouchers", "Chat", "Stock", "ShippingZones"
+        "Dashboard", "Customers", "Products", "Stock", "Vouchers", "ShippingZones", "Chat"
     };
 
     private void SetActiveTab(string tab) => activeTab = tab;

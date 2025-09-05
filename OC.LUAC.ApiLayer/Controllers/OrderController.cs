@@ -1,8 +1,10 @@
 ﻿// OC.LUAC.ApiLayer/Controllers/OrderController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OC.LUAC.ApiLayer.DTO.Order;
 using OC.LUAC.ApiLayer.DTO.Product;
+using OC.LUAC.DataLayer;
 using OC.LUAC.ObjectLayer.Accounts;
 using OC.LUAC.ObjectLayer.Entities;
 using OC.LUAC.ObjectLayer.Orders;
@@ -24,6 +26,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         private readonly IEmailService _emailService;
         private readonly IVoucherService _vouchers;
         private readonly IShippingZoneService _shippingZones;
+        private readonly AppDbContext _context;
 
         public OrderController(
             IOrderService orders,
@@ -33,7 +36,8 @@ namespace OC.LUAC.ApiLayer.Controllers
             IProductVariantService variants,
             IEmailService emailService,
             IVoucherService voucherService,
-            IShippingZoneService shippingService)
+            IShippingZoneService shippingService,
+            AppDbContext context)
         {
             _orders = orders;
             _stock = stock;
@@ -43,6 +47,7 @@ namespace OC.LUAC.ApiLayer.Controllers
             _emailService = emailService;
             _vouchers = voucherService;
             _shippingZones = shippingService;
+            _context = context;
         }
 
         // -------------------------------------------------
@@ -147,18 +152,21 @@ namespace OC.LUAC.ApiLayer.Controllers
                 }
                 else
                 {
+                    // ✅ Create guest customer (no password, IsGuest = true)
                     var guest = new Customer
                     {
-                        Email = dto.Email.Trim(),
-                        FirstName = dto.FirstName,
-                        LastName = dto.LastName,
+                        Email = dto.Email.Trim().ToLowerInvariant(),
+                        FirstName = dto.FirstName ?? "Guest",
+                        LastName = dto.LastName ?? "Buyer",
                         Language = dto.Language ?? "en",
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+                        IsGuest = true,
+                        PasswordHash = null
                     };
 
-                    var randomPassword = Guid.NewGuid().ToString("N");
-                    guest = await _customers.RegisterAsync(guest, randomPassword)
-                            ?? throw new InvalidOperationException("Guest registration failed.");
+                    _context.Customers.Add(guest);
+                    await _context.SaveChangesAsync();
+
                     customerId = guest.Id;
                 }
             }
@@ -421,6 +429,25 @@ namespace OC.LUAC.ApiLayer.Controllers
             return Ok(new { id, status = "Cancelled by Customer" });
         }
 
+        //Cancel for processing
+        [HttpPut("{id:int}/cancel-processing")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CancelProcessingOrder(int id)
+        {
+            var order = await _orders.GetOrderByIdAsync(id);
+            if (order == null) return NotFound();
+
+            if (order.Status != OrderStatus.Processing)
+                return BadRequest("Only processing orders can be cancelled with this endpoint.");
+
+            var ok = await _orders.CancelOrderAsync(id);
+            if (!ok) return BadRequest("Cancellation failed.");
+
+            // Notice: no email here, since support will handle refunds/communication.
+            return Ok(new { id, status = "Cancelled (Processing)" });
+        }
+
+
 
         // Admin: cancel for no payment
         [HttpPut("{id:int}/cancel-nopayment")]
@@ -514,7 +541,8 @@ namespace OC.LUAC.ApiLayer.Controllers
                 Size = i.Size,
                 Quantity = i.Quantity,
                 UnitPrice = i.UnitPrice
-            }).ToList()
+            }).ToList(),
+            IsGuest = o.Customer?.IsGuest ?? false // 👈 include flag
         };
     }
 }

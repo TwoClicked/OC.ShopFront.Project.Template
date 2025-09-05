@@ -1,20 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using OC.LUAC.DataLayer;
 using OC.LUAC.ObjectLayer.Accounts;
 using OC.LUAC.ServiceLayer.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OC.LUAC.ServiceLayer.Services
 {
     public class CustomerService : ICustomerService
     {
-
         private readonly AppDbContext _context;
 
         public CustomerService(AppDbContext context)
@@ -22,11 +16,7 @@ namespace OC.LUAC.ServiceLayer.Services
             _context = context;
         }
 
-        /// <summary>
-        /// Soft delete (GDPR)
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
+        // 🗑️ Soft delete (GDPR)
         public async Task<bool> DeleteCustomerAsync(int id)
         {
             var customer = await _context.Customers
@@ -35,18 +25,15 @@ namespace OC.LUAC.ServiceLayer.Services
 
             if (customer == null || customer.IsDeleted) return false;
 
-            // Mark & timestamp
             customer.IsDeleted = true;
             customer.DeletedAt = DateTime.UtcNow;
 
-            // Scrub PII on Customer (use unique email to satisfy unique index)
             customer.FirstName = "[Deleted]";
             customer.LastName = "[Deleted]";
             customer.Email = $"deleted_{customer.Id}@anon.invalid";
-            customer.PasswordHash = HashPassword(Guid.NewGuid().ToString("N"));           // Safe NULL
-            customer.Language = string.Empty;   // or leave as-is
+            customer.PasswordHash = HashPassword(Guid.NewGuid().ToString("N"));
+            customer.Language = string.Empty;
 
-            // Scrub Addresses (keep FK, but clear personal fields)
             if (customer.Addresses != null)
             {
                 foreach (var a in customer.Addresses.Where(a => !a.IsDeleted))
@@ -66,96 +53,77 @@ namespace OC.LUAC.ServiceLayer.Services
             return true;
         }
 
-        /// <summary>
-        /// Retrieves all customers from the database, excluding those marked as deleted.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         public async Task<Customer?> GetCustomerByIdAsync(int id)
         {
             return await _context.Customers
                 .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
         }
 
-        /// <summary>
-        /// Logs in a customer with the provided email and password, validating credentials against stored data.
-        /// </summary>
-        /// <param name="email"></param>
-        /// <param name="password"></param>
-        /// <returns></returns>
+        // 🔑 Login
         public async Task<Customer?> LoginAsync(string email, string password)
         {
             var user = await _context.Customers
                 .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
 
-            if (user == null) return null;
+            if (user == null || user.IsGuest) return null; // 🚫 block guests
 
-            // Validate password
-            if (!ValidatePassword(password, user.PasswordHash))
-            {
-                return null;
-            }
+            if (!ValidatePassword(password, user.PasswordHash)) return null;
 
-            user.LastLoginAt = DateTime.UtcNow; // update login time
+            user.LastLoginAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             return user;
         }
 
-
-        /// <summary>
-        /// Registers a new customer by saving their details and hashing their password.
-        /// </summary>
-        /// <param name="customer"></param>
-        /// <param name="plainPassword"></param>
-        /// <returns></returns>
+        // 🆕 Register or Upgrade
         public async Task<Customer?> RegisterAsync(Customer customer, string plainPassword)
         {
-            // Normalize & basic checks
             var email = customer.Email?.Trim().ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(email)) return null;
 
-            var exists = await _context.Customers
-                .AnyAsync(c => c.Email == email && !c.IsDeleted);
-            if (exists)
+            var existingCustomer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Email == email && !c.IsDeleted);
+
+            if (existingCustomer != null)
             {
+                if (existingCustomer.IsGuest)
+                {
+                    // 🔄 Upgrade guest to full account
+                    existingCustomer.FirstName = customer.FirstName;
+                    existingCustomer.LastName = customer.LastName;
+                    existingCustomer.Language = customer.Language;
+                    existingCustomer.PasswordHash = HashPassword(plainPassword);
+                    existingCustomer.IsGuest = false;
+                    existingCustomer.LastLoginAt = DateTime.UtcNow;
+
+                    _context.Customers.Update(existingCustomer);
+                    await _context.SaveChangesAsync();
+                    return existingCustomer;
+                }
+
                 throw new InvalidOperationException("A customer with this email already exists.");
             }
 
-            // Hash password (use your existing hashing util)
-            var hash = HashPassword(plainPassword); // your method
+            // 🆕 New customer
             customer.Email = email;
-            customer.PasswordHash = hash;
-
-            // Timestamps
+            customer.PasswordHash = HashPassword(plainPassword);
+            customer.IsGuest = false;
             customer.CreatedAt = DateTime.UtcNow;
-            customer.LastLoginAt = DateTime.UtcNow;   // <= consider them “logged in” on registration
+            customer.LastLoginAt = DateTime.UtcNow;
 
-            // Persist
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
 
             return customer;
         }
 
-        /// <summary>
-        /// Updates a customer's profile information, such as name and address, while ensuring the account is not deleted.
-        /// </summary>
-        /// <param name="customer"></param>
-        /// <returns></returns>
         public async Task<Customer> UpdateProfileAsync(Customer customer)
         {
             _context.Customers.Update(customer);
             await _context.SaveChangesAsync();
-            return customer; // Return the updated customer entity
+            return customer;
         }
 
-        /// <summary>
-        /// Validates a plain-text password against the stored hashed password for a customer.
-        /// </summary>
-        /// <param name="password"></param>
-        /// <param name="storedHash"></param>
-        /// <returns></returns>
         public bool ValidatePassword(string password, string storedHash)
         {
             using var sha256 = SHA256.Create();
@@ -166,7 +134,7 @@ namespace OC.LUAC.ServiceLayer.Services
         public async Task<bool> ChangePasswordAsync(int customerId, string oldPassword, string newPassword)
         {
             var customer = await _context.Customers.FindAsync(customerId);
-            if (customer == null || customer.IsDeleted) return false;
+            if (customer == null || customer.IsDeleted || customer.IsGuest) return false;
 
             if (!ValidatePassword(oldPassword, customer.PasswordHash))
                 return false;
@@ -178,7 +146,7 @@ namespace OC.LUAC.ServiceLayer.Services
             return true;
         }
 
-        // ✅ Address CRUD
+        // 📦 Address CRUD
         public async Task<List<Address>> GetAddressesByCustomerIdAsync(int customerId)
         {
             return await _context.Addresses
@@ -197,7 +165,8 @@ namespace OC.LUAC.ServiceLayer.Services
 
         public async Task<Address?> UpdateAddressAsync(Address address)
         {
-            var existing = await _context.Addresses.FirstOrDefaultAsync(a => a.Id == address.Id && !a.IsDeleted);
+            var existing = await _context.Addresses
+                .FirstOrDefaultAsync(a => a.Id == address.Id && !a.IsDeleted);
             if (existing == null) return null;
 
             existing.Label = address.Label ?? existing.Label;
@@ -214,7 +183,8 @@ namespace OC.LUAC.ServiceLayer.Services
 
         public async Task<bool> DeleteAddressAsync(int addressId)
         {
-            var existing = await _context.Addresses.FirstOrDefaultAsync(a => a.Id == addressId && !a.IsDeleted);
+            var existing = await _context.Addresses
+                .FirstOrDefaultAsync(a => a.Id == addressId && !a.IsDeleted);
             if (existing == null) return false;
 
             existing.IsDeleted = true;
@@ -224,20 +194,22 @@ namespace OC.LUAC.ServiceLayer.Services
             return true;
         }
 
-        // ✅ Admin controls
+        // 👮 Admin controls
         public async Task<bool> DeactivateCustomerAsync(int id)
         {
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
             if (customer == null) return false;
 
-            customer.IsActive = false; // add IsActive column if not there
+            customer.IsActive = false;
             await _context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> ReactivateCustomerAsync(int id)
         {
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
             if (customer == null) return false;
 
             customer.IsActive = true;
@@ -247,30 +219,24 @@ namespace OC.LUAC.ServiceLayer.Services
 
         public async Task<Customer?> GetCustomerByEmailAsync(string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
-                return null;
+            if (string.IsNullOrWhiteSpace(email)) return null;
 
             var normalized = email.Trim().ToLowerInvariant();
             return await _context.Customers
                 .FirstOrDefaultAsync(c => c.Email == normalized && !c.IsDeleted);
         }
 
-
-
-        /// <summary>
-        /// Hashes a plain-text password using SHA-256 and returns the hashed value as a Base64 string.
-        /// </summary>
-        /// <param name="password"></param>
-        /// <returns></returns>
         private string HashPassword(string password)
         {
             using var sha256 = SHA256.Create();
             return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
         }
 
+        // 🔑 Reset password (registered users only)
         public async Task<PasswordResetToken?> CreatePasswordResetTokenAsync(string email)
         {
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == email && c.IsActive && !c.IsDeleted);
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Email == email && c.IsActive && !c.IsDeleted && !c.IsGuest);
             if (customer == null) return null;
 
             var resetToken = new PasswordResetToken
@@ -285,11 +251,11 @@ namespace OC.LUAC.ServiceLayer.Services
 
             return resetToken;
         }
+
         public async Task<List<Customer>> GetAllCustomersAsync()
         {
             return await _context.Customers.ToListAsync();
         }
-
 
         public async Task<bool> ResetPasswordAsync(string token, string newPassword)
         {
@@ -297,7 +263,7 @@ namespace OC.LUAC.ServiceLayer.Services
                 .Include(t => t.Customer)
                 .FirstOrDefaultAsync(t => t.Token == token && !t.Used && t.ExpiresAt > DateTime.UtcNow);
 
-            if (reset == null) return false;
+            if (reset == null || reset.Customer.IsGuest) return false;
 
             reset.Used = true;
             reset.Customer.PasswordHash = HashPassword(newPassword);

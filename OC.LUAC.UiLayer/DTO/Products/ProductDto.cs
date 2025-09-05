@@ -38,9 +38,10 @@ namespace OC.LUAC.UiLayer.DTO.Products
         [JsonPropertyName("images")]
         public List<ProductImageDto> Images { get; set; } = new();
 
-        public string? FullThumbnailUrl(string apiBaseUrl) =>
+        public string? FullThumbnailUrl(string baseUrl) =>
             string.IsNullOrWhiteSpace(ThumbnailUrl)
                 ? null
-                : apiBaseUrl.TrimEnd('/') + ThumbnailUrl;
+                : $"{baseUrl.TrimEnd('/')}/{ThumbnailUrl.TrimStart('/')}";
+
     }
 }

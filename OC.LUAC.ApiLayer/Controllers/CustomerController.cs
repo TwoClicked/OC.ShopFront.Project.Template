@@ -31,7 +31,7 @@ public class CustomerController : ControllerBase
     // =========================
 
     [HttpPost("register")]
-    public async Task<ActionResult<Customer>> Register([FromBody] RegisterCustomerDto dto)
+    public async Task<ActionResult<object>> Register([FromBody] RegisterCustomerDto dto)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
@@ -43,11 +43,35 @@ public class CustomerController : ControllerBase
             Language = dto.Language
         };
 
-        var created = await _customers.RegisterAsync(customer, dto.Password);
-        if (created == null) return BadRequest("Registration failed.");
+        try
+        {
+            var created = await _customers.RegisterAsync(customer, dto.Password);
+            if (created == null) return BadRequest("Registration failed.");
 
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+            if (!created.IsGuest)
+            {
+                // If this was a guest upgraded to full account, return a special message
+                return Ok(new
+                {
+                    status = "UpgradedGuest",
+                    message = "Your guest account has been upgraded to a full account.",
+                    customer = created
+                });
+            }
+
+            // New registration
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, new
+            {
+                status = "NewRegistration",
+                customer = created
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
+
 
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginDto dto)
