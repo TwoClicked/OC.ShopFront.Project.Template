@@ -1,0 +1,242 @@
+﻿@page "/admin/products/edit/{Id:int}"
+@using OC.LUAC.UiLayer.DTO.Products
+@inject HttpClient Http
+@inject AdminAuthService AdminAuth
+@inject NavigationManager Nav
+@inject IConfiguration Config
+
+<h2 class="text-2xl font-bold mb-6 text-amber-600">Edit Product</h2>
+
+@if (isLoading)
+{
+    <p class="text-gray-400">Loading product...</p>
+}
+else if (product == null)
+{
+    <p class="text-red-500">Product not found.</p>
+}
+else
+{
+    <EditForm Model="product" OnValidSubmit="HandleSave">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <!-- Product Fields -->
+        <div class="grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-gray-300">Name (EN)</label>
+                <InputText @bind-Value="product.Name_En" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+            </div>
+
+            <div>
+                <label class="block text-gray-300">Name (DE)</label>
+                <InputText @bind-Value="product.Name_De" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+            </div>
+
+            <div>
+                <label class="block text-gray-300">Description (EN)</label>
+                <InputTextArea @bind-Value="product.Description_En" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+            </div>
+
+            <div>
+                <label class="block text-gray-300">Description (DE)</label>
+                <InputTextArea @bind-Value="product.Description_De" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+            </div>
+
+            <div>
+                <label class="block text-gray-300">Price</label>
+                <InputNumber @bind-Value="product.Price" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+            </div>
+
+            <div>
+                <label class="block text-gray-300">Category</label>
+                <InputSelect @bind-Value="product.CategoryId" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white">
+                    <option value="1">T-Shirts</option>
+                    <option value="2">Pullovers</option>
+                    <option value="3">Accessories</option>
+                </InputSelect>
+            </div>
+
+            <div class="col-span-2">
+                <label class="inline-flex items-center space-x-2">
+                    <InputCheckbox @bind-Value="product.IsFeatured" />
+                    <span class="text-gray-300">Featured Product</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Variants & Stock -->
+        <div class="mt-8">
+            <h3 class="text-lg font-semibold text-amber-500 mb-2">Variants & Stock</h3>
+            <table class="w-full text-sm border-collapse">
+                <thead class="bg-neutral-900 text-gray-400">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Size</th>
+                        <th class="px-3 py-2 text-left">Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in product.Variants)
+                    {
+                        <tr class="border-b border-neutral-700">
+                            <td class="px-3 py-2">@v.Size</td>
+                            <td class="px-3 py-2">
+                                <InputNumber @bind-Value="v.Stock" class="w-24 p-1 rounded bg-neutral-800 border border-neutral-600 text-white" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Images -->
+        <div class="mt-8">
+            <h3 class="text-lg font-semibold text-amber-500 mb-2">Product Images</h3>
+            <InputFile OnChange="HandleImageUpload" multiple class="mb-4" />
+
+            <p class="text-sm text-gray-400 mb-2">First image is used as thumbnail.</p>
+
+            <div class="grid grid-cols-6 gap-4">
+                @foreach (var img in product.Images.OrderBy(i => i.SortOrder))
+                {
+                    <div class="relative border rounded overflow-hidden w-32 h-44 bg-neutral-800">
+                        <img src="@($"{Config["ApiBaseUrl"]}{img.ImageUrl}")"
+                             class="w-full h-full object-cover" />
+
+                        @if (img.SortOrder == 0)
+                        {
+                            <span class="absolute top-1 left-1 bg-amber-600 text-xs text-white px-2 py-0.5 rounded">Thumbnail</span>
+                        }
+
+                        <button type="button"
+                                class="absolute bottom-1 right-1 bg-red-600 text-xs text-white px-2 py-0.5 rounded"
+                                @onclick="() => RemoveImage(img)">
+                            Remove
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Save / Cancel -->
+        <div class="mt-8 flex space-x-4">
+            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded" disabled="@isSaving">
+                @(isSaving ? "Saving..." : "Save Changes")
+            </button>
+            <button type="button" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded" @onclick="Cancel">
+                Cancel
+            </button>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private ProductDetailsDto? product;
+    private bool isLoading = true;
+    private bool isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await AdminAuth.GetTokenAsync();
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            product = await Http.GetFromJsonAsync<ProductDetailsDto>($"products/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load product: " + ex.Message);
+        }
+        isLoading = false;
+    }
+
+    private async Task HandleSave()
+    {
+        if (product == null) return;
+        isSaving = true;
+
+        var token = await AdminAuth.GetTokenAsync();
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            // Update product fields
+            await Http.PutAsJsonAsync($"products/{product.Id}", new UpdateProductDto
+                {
+                    Name_en = product.Name_En,
+                    Name_de = product.Name_De,
+                    Description_en = product.Description_En,
+                    Description_de = product.Description_De,
+                    Price = product.Price,
+                    CategoryId = product.CategoryId,
+                    IsFeatured = product.IsFeatured
+                });
+
+            // Update stock for variants
+            foreach (var v in product.Variants)
+            {
+                await Http.PutAsJsonAsync($"products/{product.Id}/variants/{v.Id}", new UpdateProductVariantDto
+                    {
+                        Size = v.Size,
+                        Stock = v.Stock
+                    });
+            }
+
+            Nav.NavigateTo("/admin?tab=Products");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to save product: " + ex.Message);
+        }
+
+        isSaving = false;
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        if (product == null) return;
+
+        var token = await AdminAuth.GetTokenAsync();
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        foreach (var file in e.GetMultipleFiles())
+        {
+            using var content = new MultipartFormDataContent();
+            var stream = file.OpenReadStream(10 * 1024 * 1024);
+            content.Add(new StreamContent(stream), "File", file.Name);
+            content.Add(new StringContent((product.Images?.Count ?? 0).ToString()), "SortOrder");
+
+            var response = await Http.PostAsync($"products/{product.Id}/images/upload", content);
+            response.EnsureSuccessStatusCode();
+
+            var uploaded = await response.Content.ReadFromJsonAsync<ProductImageDto>();
+            if (uploaded != null) product.Images.Add(uploaded);
+        }
+    }
+
+    private async Task RemoveImage(ProductImageDto img)
+    {
+        if (product == null) return;
+
+        var token = await AdminAuth.GetTokenAsync();
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.DeleteAsync($"products/{product.Id}/images/{img.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            product.Images.Remove(img);
+        }
+    }
+
+    private void Cancel()
+    {
+        Nav.NavigateTo("/admin?tab=Products");
+    }
+}

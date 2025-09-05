@@ -196,6 +196,16 @@ namespace OC.LUAC.DataLayer
             modelBuilder.Entity<ShippingZoneCountry>()
                 .Property(c => c.CountryName)
                 .HasMaxLength(100);
+
+            // Global filters for soft-delete
+            modelBuilder.Entity<Product>()
+                .HasQueryFilter(p => !p.IsDeleted);
+
+            modelBuilder.Entity<ProductImage>()
+                .HasQueryFilter(i => !i.IsDeleted);
+
+            modelBuilder.Entity<ProductVariant>()
+                .HasQueryFilter(v => !v.IsDeleted);
         }
     }
 }

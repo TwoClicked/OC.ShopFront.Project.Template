@@ -1,0 +1,250 @@
+﻿@page "/admin/products/new"
+@using OC.LUAC.UiLayer.DTO.Products
+@inject HttpClient Http
+@inject AdminAuthService AdminAuth
+@inject NavigationManager Nav
+@inject IConfiguration Config
+
+<h2 class="text-2xl font-bold mb-6 text-amber-600">Add New Product</h2>
+
+@if (!productCreated)
+{
+    <!-- Create Product Form -->
+    <EditForm Model="model" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="grid grid-cols-2 gap-6">
+            <!-- English Name -->
+            <div>
+                <label class="block text-gray-300">Name (EN)</label>
+                <InputText @bind-Value="model.Name_en" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+                <ValidationMessage For="@(() => model.Name_en)" />
+            </div>
+
+            <!-- German Name -->
+            <div>
+                <label class="block text-gray-300">Name (DE)</label>
+                <InputText @bind-Value="model.Name_de" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+                <ValidationMessage For="@(() => model.Name_de)" />
+            </div>
+
+            <!-- English Description -->
+            <div>
+                <label class="block text-gray-300">Description (EN)</label>
+                <InputTextArea @bind-Value="model.Description_en" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+                <ValidationMessage For="@(() => model.Description_en)" />
+            </div>
+
+            <!-- German Description -->
+            <div>
+                <label class="block text-gray-300">Description (DE)</label>
+                <InputTextArea @bind-Value="model.Description_de" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+                <ValidationMessage For="@(() => model.Description_de)" />
+            </div>
+
+            <!-- Price -->
+            <div>
+                <label class="block text-gray-300">Price</label>
+                <InputNumber @bind-Value="model.Price" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
+                <ValidationMessage For="@(() => model.Price)" />
+            </div>
+
+            <!-- Category -->
+            <div>
+                <label class="block text-gray-300">Category</label>
+                <InputSelect @bind-Value="model.CategoryId" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white">
+                    <option value="">-- Select --</option>
+                    <option value="1">T-Shirts</option>
+                    <option value="2">Pullovers</option>
+                    <option value="3">Accessories</option>
+                </InputSelect>
+                <ValidationMessage For="@(() => model.CategoryId)" />
+            </div>
+
+            <!-- Featured -->
+            <div class="col-span-2">
+                <label class="inline-flex items-center space-x-2">
+                    <InputCheckbox @bind-Value="model.IsFeatured" />
+                    <span class="text-gray-300">Featured Product</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Variants & Stock -->
+        <div class="mt-6">
+            <h3 class="text-lg font-semibold text-amber-500 mb-2">Variants & Stock</h3>
+            <table class="w-full text-sm border-collapse">
+                <thead class="bg-neutral-900 text-gray-400">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Size</th>
+                        <th class="px-3 py-2 text-left">Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var variant in variants)
+                    {
+                        <tr class="border-b border-neutral-700">
+                            <td class="px-3 py-2">@variant.Size</td>
+                            <td class="px-3 py-2">
+                                <InputNumber @bind-Value="variant.Stock"
+                                             class="w-24 p-1 rounded bg-neutral-800 border border-neutral-600 text-white" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 flex space-x-4">
+            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded" disabled="@isSaving">
+                @(isSaving ? "Saving..." : "Save Product")
+            </button>
+            <button type="button" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded" @onclick="Cancel">
+                Cancel
+            </button>
+        </div>
+    </EditForm>
+}
+else
+{
+    <!-- Image Upload Section -->
+    <div class="mt-8">
+        <h3 class="text-lg font-semibold text-amber-500 mb-2">Product Images</h3>
+        <InputFile OnChange="HandleImageUpload" multiple class="mb-4" />
+
+        <div class="grid grid-cols-4 gap-4">
+            @for (int i = 0; i < images.Count; i++)
+            {
+                var img = images[i];
+                <div class="relative border rounded overflow-hidden w-40 h-56 flex flex-col items-center">
+                    <img src="@($"{Config["ApiBaseUrl"]}{img.ImageUrl}")"
+                         class="w-full h-48 object-cover" />
+
+                    @if (i == 0)
+                    {
+                        <span class="absolute top-1 left-1 bg-amber-600 text-white text-xs px-2 py-1 rounded">
+                            Thumbnail
+                        </span>
+                    }
+
+                    <button class="mt-1 text-xs text-red-500 hover:underline"
+                            @onclick="() => RemoveImage(img)">
+                        Remove
+                    </button>
+                </div>
+            }
+        </div>
+
+        <div class="mt-6 flex space-x-4">
+            <button type="button" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded" @onclick="Finish">
+                Finish
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private CreateProductDto model = new();
+    private List<ProductVariantDto> variants = new()
+    {
+        new ProductVariantDto { Size = "XS" },
+        new ProductVariantDto { Size = "S" },
+        new ProductVariantDto { Size = "M" },
+        new ProductVariantDto { Size = "L" },
+        new ProductVariantDto { Size = "XL" },
+        new ProductVariantDto { Size = "XXL" }
+    };
+
+    private bool isSaving = false;
+    private bool productCreated = false;
+    private int createdProductId = 0;
+    private List<ProductImageDto> images = new();
+
+    private async Task HandleValidSubmit()
+    {
+        if (productCreated) return;
+        isSaving = true;
+
+        var token = await AdminAuth.GetTokenAsync();
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            // Step 1: Create product
+            var response = await Http.PostAsJsonAsync("products", model);
+            response.EnsureSuccessStatusCode();
+
+            var created = await response.Content.ReadFromJsonAsync<Dictionary<string, int>>();
+            createdProductId = created?["id"] ?? 0;
+            productCreated = true;
+
+            // Step 2: Add variants
+            foreach (var v in variants)
+            {
+                await Http.PostAsJsonAsync($"products/{createdProductId}/variants", v);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to create product: " + ex.Message);
+        }
+
+        isSaving = false;
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        if (createdProductId <= 0) return;
+
+        var token = await AdminAuth.GetTokenAsync();
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        foreach (var file in e.GetMultipleFiles())
+        {
+            using var content = new MultipartFormDataContent();
+            var stream = file.OpenReadStream(10 * 1024 * 1024);
+            content.Add(new StreamContent(stream), "File", file.Name);
+            content.Add(new StringContent(images.Count == 0 ? "0" : (images.Count).ToString()), "SortOrder");
+
+            var response = await Http.PostAsync($"products/{createdProductId}/images/upload", content);
+            response.EnsureSuccessStatusCode();
+
+            var uploaded = await response.Content.ReadFromJsonAsync<ProductImageDto>();
+            if (uploaded != null) images.Add(uploaded);
+        }
+    }
+
+    private async Task RemoveImage(ProductImageDto img)
+    {
+        if (createdProductId <= 0 || img.Id == 0) return;
+
+        var token = await AdminAuth.GetTokenAsync();
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.DeleteAsync($"products/{createdProductId}/images/{img.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            images.Remove(img);
+
+            // Ensure first image becomes thumbnail
+            for (int i = 0; i < images.Count; i++)
+            {
+                images[i].SortOrder = i;
+            }
+        }
+    }
+
+    private void Cancel()
+    {
+        Nav.NavigateTo("/admin?tab=Products");
+    }
+
+    private void Finish()
+    {
+        Nav.NavigateTo("/admin?tab=Products");
+    }
+}

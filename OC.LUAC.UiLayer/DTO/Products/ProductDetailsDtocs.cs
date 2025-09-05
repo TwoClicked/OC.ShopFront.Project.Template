@@ -20,6 +20,12 @@ namespace OC.LUAC.UiLayer.DTO.Products
 
         public decimal Price { get; set; }
 
+        [JsonPropertyName("categoryId")]
+        public int CategoryId { get; set; }
+
+        [JsonPropertyName("isFeatured")]
+        public bool IsFeatured { get; set; }
+
         [JsonPropertyName("thumbnailUrl")]
         public string? ThumbnailUrl { get; set; }
 
