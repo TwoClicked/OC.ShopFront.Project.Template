@@ -5,7 +5,14 @@ namespace OC.LUAC.UiLayer.DTO.Checkout;
 
 public class CheckoutRequestDto
 {
-    [Required] public AddressDto Shipping { get; set; } = new();
+    [Required]
+    public AddressDto Shipping { get; set; } = new();
+
     public AddressDto? Billing { get; set; } // optional if "same as shipping"
-    [Required] public List<CheckoutItemDto> Items { get; set; } = new();
+
+    [Required]
+    public List<CheckoutItemDto> Items { get; set; } = new();
+
+    // voucher code passed from checkout page
+    public string? VoucherCode { get; set; }
 }

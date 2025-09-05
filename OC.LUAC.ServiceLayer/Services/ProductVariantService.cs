@@ -1,12 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using OC.LUAC.DataLayer;
 using OC.LUAC.ObjectLayer.Entities;
 using OC.LUAC.ServiceLayer.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace OC.LUAC.ServiceLayer.Services
@@ -16,7 +14,6 @@ namespace OC.LUAC.ServiceLayer.Services
     /// </summary>
     public class ProductVariantService : IProductVariantService
     {
-
         private readonly AppDbContext _context;
 
         public ProductVariantService(AppDbContext context)
@@ -27,8 +24,6 @@ namespace OC.LUAC.ServiceLayer.Services
         /// <summary>
         /// Adds a new product variant to the database.
         /// </summary>
-        /// <param name="variant"></param>
-        /// <returns></returns>
         public async Task<ProductVariant> AddVariantAsync(ProductVariant variant)
         {
             _context.ProductVariants.Add(variant);
@@ -37,11 +32,8 @@ namespace OC.LUAC.ServiceLayer.Services
         }
 
         /// <summary>
-        /// Updates an existing product variant in the database.
+        /// Adjusts stock for a variant by changing its quantity.
         /// </summary>
-        /// <param name="variantId"></param>
-        /// <param name="quantityChange"></param>
-        /// <returns></returns>
         public async Task<bool> AdjustStockAsync(int variantId, int quantityChange)
         {
             var variant = await _context.ProductVariants.FindAsync(variantId);
@@ -56,33 +48,41 @@ namespace OC.LUAC.ServiceLayer.Services
             return true; // Stock adjustment successful
         }
 
+        /// <summary>
+        /// Retrieves all non-deleted product variants, including their parent Product.
+        /// </summary>
         public async Task<List<ProductVariant>> GetAllVariantsAsync()
         {
-            return await _context.ProductVariants.Where(v => !v.IsDeleted).ToListAsync();
-        }
-
-        public async Task<ProductVariant?> GetVariantByIdAsync(int id)
-        {
-            return await _context.ProductVariants.FirstOrDefaultAsync(v => v.Id == id && !v.IsDeleted);
+            return await _context.ProductVariants
+                .Include(v => v.Product) // ✅ Include product details
+                .Where(v => !v.IsDeleted)
+                .ToListAsync();
         }
 
         /// <summary>
-        /// Retrieves all product variants associated with a specific product ID.
+        /// Retrieves a variant by ID, including its parent Product.
         /// </summary>
-        /// <param name="productId"></param>
-        /// <returns></returns>
+        public async Task<ProductVariant?> GetVariantByIdAsync(int id)
+        {
+            return await _context.ProductVariants
+                .Include(v => v.Product) // ✅ Include product details
+                .FirstOrDefaultAsync(v => v.Id == id && !v.IsDeleted);
+        }
+
+        /// <summary>
+        /// Retrieves all variants for a given product, including product details.
+        /// </summary>
         public async Task<List<ProductVariant>> GetVariantsByProductIdAsync(int productId)
         {
             return await _context.ProductVariants
+                .Include(v => v.Product) // ✅ Include product details
                 .Where(v => v.ProductId == productId && !v.IsDeleted)
                 .ToListAsync();
         }
 
         /// <summary>
-        /// Soft deletes a product variant by setting its IsDeleted flag to true and recording the deletion time.
+        /// Soft deletes a product variant by setting its IsDeleted flag.
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         public async Task<bool> SoftDeleteVariatAsync(int id)
         {
             var variant = await _context.ProductVariants.FindAsync(id);
@@ -91,17 +91,15 @@ namespace OC.LUAC.ServiceLayer.Services
                 return false; // Variant not found or already deleted
             }
 
-            variant.IsDeleted = true; // Mark as deleted
-            variant.DeletedAt = DateTime.UtcNow; // Set deletion time
+            variant.IsDeleted = true;
+            variant.DeletedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true; // Soft delete successful
         }
 
         /// <summary>
-        /// Updates an existing product variant in the database.
+        /// Updates an existing product variant.
         /// </summary>
-        /// <param name="variant"></param>
-        /// <returns></returns>
         public async Task<ProductVariant> UpdateVariantAsync(ProductVariant variant)
         {
             _context.ProductVariants.Update(variant);

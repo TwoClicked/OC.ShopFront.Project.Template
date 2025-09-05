@@ -1,0 +1,230 @@
+﻿@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject AdminAuthService AdminAuth
+@inject IJSRuntime JS
+
+<h2 class="text-2xl font-bold mb-6 text-amber-600">Shipping Zones</h2>
+
+<!-- Toolbar -->
+<div class="flex justify-between items-center mb-4 space-x-4">
+    <input type="text"
+           @bind="searchTerm"
+           @bind:event="oninput"
+           placeholder="Search zones..."
+           class="px-4 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400 placeholder-gray-500 w-1/3" />
+
+    <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded"
+            @onclick='() => Nav.NavigateTo("/admin/shipping-zones/create")'>
+        + Add Zone
+    </button>
+</div>
+
+@if (pagedZones == null)
+{
+    <p class="text-gray-400">Loading zones...</p>
+}
+else if (!pagedZones.Any())
+{
+    <p class="text-gray-400">No shipping zones found.</p>
+}
+else
+{
+    <table class="w-full text-center border-collapse">
+        <thead class="bg-neutral-900 text-gray-400 uppercase text-xs">
+            <tr>
+                <th class="px-3 py-2">Name</th>
+                <th class="px-3 py-2">Base Cost</th>
+                <th class="px-3 py-2">Free Shipping Threshold</th>
+                <th class="px-3 py-2">Default</th>
+                <th class="px-3 py-2">Countries</th>
+                <th class="px-3 py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var z in pagedZones)
+            {
+                <tr class="border-b border-neutral-700">
+                    <td class="px-3 py-2">@z.Name</td>
+                    <td class="px-3 py-2">€@z.BaseCost</td>
+                    <td class="px-3 py-2">€@z.FreeShippingThreshold</td>
+                    <td class="px-3 py-2">@(z.IsDefault ? "✔️" : "-")</td>
+                    <td class="px-3 py-2">
+                        @if (z.Countries.Any())
+                        {
+                            <span title="@string.Join(", ", z.Countries.Select(c => c.Name))">
+                                @z.Countries.Count
+                            </span>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </td>
+                    <td class="px-3 py-2 space-x-2">
+                        <button class="text-amber-500 hover:underline"
+                                @onclick='() => Nav.NavigateTo($"/admin/shipping-zones/edit/{z.Id}")'>
+                            Edit
+                        </button>
+                        <button class="text-red-500 hover:underline"
+                                @onclick="() => ConfirmAndDelete(z.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination + Page Size -->
+    <div class="flex flex-col items-center space-y-2 mt-4 text-sm text-amber-600">
+        <div class="w-full flex justify-center">
+            <select class="w-full max-w-xs px-3 py-1 rounded bg-neutral-800 border border-neutral-600 text-amber-600 text-center"
+                    @onchange="OnPageSizeChanged">
+                <option value="8">8 per page</option>
+                <option value="16">16 per page</option>
+                <option value="24">24 per page</option>
+            </select>
+        </div>
+
+        <div class="w-full max-w-xs flex items-center justify-between">
+            <button @onclick="PrevPage" disabled="@(!CanPrevPage)"
+                    class="px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                Previous
+            </button>
+            <span class="text-amber-600">Page @currentPage of @totalPages</span>
+            <button @onclick="NextPage" disabled="@(!CanNextPage)"
+                    class="px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                Next
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ShippingZoneVm> allZones = new();
+    private List<ShippingZoneVm> pagedZones = new();
+
+    private string _searchTerm = "";
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                ApplyFilters();
+            }
+        }
+    }
+
+    private int currentPage = 1;
+    private int pageSize = 8;
+    private int totalPages = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadZones();
+    }
+
+    private async Task LoadZones()
+    {
+        var token = await AdminAuth.GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var result = await Http.GetFromJsonAsync<List<ShippingZoneVm>>("shipping-zones");
+            allZones = result ?? new();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load shipping zones: " + ex.Message);
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = allZones;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filtered = filtered
+                .Where(z => z.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        totalPages = Math.Max(1, (int)Math.Ceiling(filtered.Count / (double)pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        pagedZones = filtered
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            pageSize = size;
+            currentPage = 1;
+            ApplyFilters();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (currentPage > 1) currentPage--;
+        ApplyFilters();
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages) currentPage++;
+        ApplyFilters();
+    }
+
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < totalPages;
+
+    private async Task<bool> Confirm(string message)
+    {
+        return await JS.InvokeAsync<bool>("confirm", message);
+    }
+
+    private async Task ConfirmAndDelete(int zoneId)
+    {
+        if (await Confirm("Are you sure you want to DELETE this shipping zone?"))
+        {
+            await DeleteZone(zoneId);
+        }
+    }
+
+    private async Task DeleteZone(int zoneId)
+    {
+        await Http.DeleteAsync($"shipping-zones/{zoneId}");
+        await LoadZones();
+    }
+
+    private class ShippingZoneVm
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public decimal BaseCost { get; set; }
+        public decimal FreeShippingThreshold { get; set; }
+        public bool IsDefault { get; set; }
+        public List<CountryVm> Countries { get; set; } = new();
+    }
+
+    private class CountryVm
+    {
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+    }
+}

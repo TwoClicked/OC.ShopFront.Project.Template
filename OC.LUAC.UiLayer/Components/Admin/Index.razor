@@ -10,7 +10,7 @@
         @foreach (var tab in tabs)
         {
             <button @onclick="() => SetActiveTab(tab)"
-            class="pb-2 px-1 border-b-2 transition-colors duration-200 @(activeTab == tab ? "border-amber-500 text-amber-500 font-semibold" : "border-transparent text-gray-400 hover:text-white")">
+                    class="pb-2 px-1 border-b-2 transition-colors duration-200 @(activeTab == tab ? "border-amber-500 text-amber-500 font-semibold" : "border-transparent text-gray-400 hover:text-white")">
                 @tab
             </button>
         }
@@ -37,7 +37,7 @@
             <AdminChatTab />
             break;
         case "ShippingZones":
-            <ShippingZoneTab />
+            <AdminShippingZoneTab />
             break;
         case "Stock":
             <AdminStockTab />
@@ -48,9 +48,10 @@
 @code {
     private string activeTab = "Dashboard";
     private readonly List<string> tabs = new()
-    {
-        "Dashboard", "Customers", "Products", "Stock", "Vouchers", "ShippingZones", "Chat"
-    };
+{
+    "Dashboard", "Customers", "Products", "Stock", "Vouchers", "ShippingZones", "Chat"
+};
+
 
     private void SetActiveTab(string tab) => activeTab = tab;
 

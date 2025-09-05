@@ -1,5 +1,4 @@
-﻿// ApiLayer/Controllers/ShippingZoneController.cs
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OC.LUAC.ApiLayer.DTO.Shipping;
 using OC.LUAC.ApiLayer.DTO.ShippingZone;
@@ -37,7 +36,13 @@ public class ShippingZoneController : ControllerBase
             BaseCost = dto.BaseCost,
             FreeShippingThreshold = dto.FreeShippingThreshold,
             IsDefault = dto.IsDefault,
-            Countries = dto.Countries.Select(c => new ShippingZoneCountry { CountryCode = c }).ToList()
+            Countries = dto.Countries
+                .Select(c => new ShippingZoneCountry
+                {
+                    CountryCode = c.Code,
+                    CountryName = c.Name
+                })
+                .ToList()
         };
 
         var created = await _zones.CreateZoneAsync(zone);
@@ -60,7 +65,7 @@ public class ShippingZoneController : ControllerBase
         });
 
         // replace countries via service (normalized + atomic)
-        await _zones.SetCountriesAsync(id, dto.Countries);
+        await _zones.SetCountriesAsync(id, dto.Countries.Select(c => (c.Code, c.Name)));
 
         // reload for return
         var withCountries = await _zones.GetZoneByIdAsync(id);
@@ -83,9 +88,9 @@ public class ShippingZoneController : ControllerBase
     }
 
     [HttpPut("{id:int}/countries")]
-    public async Task<IActionResult> SetCountries(int id, [FromBody] List<string> countries)
+    public async Task<IActionResult> SetCountries(int id, [FromBody] List<CountryDto> countries)
     {
-        await _zones.SetCountriesAsync(id, countries);
+        await _zones.SetCountriesAsync(id, countries.Select(c => (c.Code, c.Name)));
         return NoContent();
     }
 
@@ -129,7 +134,6 @@ public class ShippingZoneController : ControllerBase
         return Ok(countries);
     }
 
-
     private static ShippingZoneDto Map(ShippingZone z) => new ShippingZoneDto
     {
         Id = z.Id,
@@ -137,6 +141,13 @@ public class ShippingZoneController : ControllerBase
         BaseCost = z.BaseCost,
         FreeShippingThreshold = z.FreeShippingThreshold,
         IsDefault = z.IsDefault,
-        Countries = z.Countries.Select(c => c.CountryCode).OrderBy(c => c).ToList()
+        Countries = z.Countries
+            .Select(c => new CountryDto
+            {
+                Code = c.CountryCode,
+                Name = c.CountryName
+            })
+            .OrderBy(c => c.Name)
+            .ToList()
     };
 }

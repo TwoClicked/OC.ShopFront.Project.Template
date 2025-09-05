@@ -1,0 +1,181 @@
+﻿@using System.Net.Http.Json
+@inject HttpClient Http
+@inject AdminAuthService AdminAuth
+@inject NavigationManager Nav
+
+<h2 class="text-2xl font-bold mb-6 text-amber-600">Stock</h2>
+
+@if (groupedProducts == null)
+{
+    <p class="text-gray-400">Loading low stock...</p>
+}
+else if (!groupedProducts.Any())
+{
+    <p class="text-gray-400">All good! 🎉 No low stock items.</p>
+}
+else
+{
+    @foreach (var p in PagedProducts)
+    {
+        <div class="mb-4 bg-neutral-900 rounded border border-neutral-700">
+            <!-- Product header -->
+            <div class="flex justify-between items-center px-4 py-3 cursor-pointer hover:bg-neutral-800"
+                 @onclick="() => ToggleExpand(p.ProductId)">
+                <div class="font-semibold text-amber-500">@p.ProductName</div>
+                <span class="text-gray-400 text-sm">(@p.Variants.Count variant(s) low)</span>
+            </div>
+
+            <!-- Expandable list -->
+            @if (expandedProducts.Contains(p.ProductId))
+            {
+                <table class="w-full text-center border-collapse">
+                    <thead class="bg-neutral-800 text-gray-400 uppercase text-xs">
+                        <tr>
+                            <th class="px-3 py-2">Size</th>
+                            <th class="px-3 py-2">Stock</th>
+                            <th class="px-3 py-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in p.Variants)
+                        {
+                            <tr class="border-b border-neutral-700">
+                                <td class="px-3 py-2">@v.Size</td>
+                                <td class="px-3 py-2 text-red-400 font-bold">@v.Stock</td>
+                                <td class="px-3 py-2">
+                                    <button class="text-amber-500 hover:underline"
+                                            @onclick="@( () => Nav.NavigateTo($"/admin/stock/log/{v.Id}") )">
+                                        View Log
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+
+    <!-- Pagination -->
+    <div class="flex justify-between items-center mt-6">
+        <div class="flex space-x-2">
+            <button class="px-3 py-1 rounded bg-neutral-800 text-gray-300 hover:bg-neutral-700"
+                    disabled="@(_page == 1)"
+                    @onclick="PrevPage">Prev</button>
+
+            <button class="px-3 py-1 rounded bg-neutral-800 text-gray-300 hover:bg-neutral-700"
+                    disabled="@(_page >= TotalPages)"
+                    @onclick="NextPage">Next</button>
+        </div>
+
+        <select class="bg-neutral-800 text-gray-300 px-2 py-1 rounded"
+                @onchange="OnPageSizeChanged">
+            <option value="8" selected="@(_pageSize == 8)">8</option>
+            <option value="16" selected="@(_pageSize == 16)">16</option>
+            <option value="24" selected="@(_pageSize == 24)">24</option>
+        </select>
+    </div>
+}
+
+@code {
+    private List<ProductGroupVm>? groupedProducts;
+    private HashSet<int> expandedProducts = new();
+
+    // Pagination
+    private int _page = 1;
+    private int _pageSize = 8;
+    private int TotalPages => groupedProducts == null ? 1 : (int)Math.Ceiling(groupedProducts.Count / (double)_pageSize);
+
+    private IEnumerable<ProductGroupVm> PagedProducts =>
+        groupedProducts?.Skip((_page - 1) * _pageSize).Take(_pageSize) ?? Enumerable.Empty<ProductGroupVm>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLowStock();
+    }
+
+    private async Task LoadLowStock()
+    {
+        try
+        {
+            var token = await AdminAuth.GetTokenAsync();
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var lowStock = await Http.GetFromJsonAsync<List<LowStockVm>>("stock/low?threshold=5") ?? new();
+
+            groupedProducts = lowStock
+                .GroupBy(v => new { v.ProductId, v.NameEn, v.NameDe })
+                .Select(g => new ProductGroupVm
+                {
+                    ProductId = g.Key.ProductId,
+                    ProductName = !string.IsNullOrWhiteSpace(g.Key.NameEn) ? g.Key.NameEn : g.Key.NameDe,
+                    Variants = g.Select(x => new VariantVm
+                    {
+                        Id = x.Id,
+                        Size = x.Size,
+                        Stock = x.Stock
+                    }).ToList()
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load low stock: " + ex.Message);
+            groupedProducts = new();
+        }
+    }
+
+    private void ToggleExpand(int productId)
+    {
+        if (expandedProducts.Contains(productId))
+            expandedProducts.Remove(productId);
+        else
+            expandedProducts.Add(productId);
+    }
+
+    // Pagination handlers
+    private void PrevPage()
+    {
+        if (_page > 1) _page--;
+    }
+
+    private void NextPage()
+    {
+        if (_page < TotalPages) _page++;
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            _pageSize = size;
+            _page = 1; // reset
+        }
+    }
+
+    // --- View Models ---
+    private class LowStockVm
+    {
+        public int Id { get; set; }
+        public int ProductId { get; set; }
+        public string NameEn { get; set; } = "";
+        public string NameDe { get; set; } = "";
+        public string Size { get; set; } = "";
+        public int Stock { get; set; }
+    }
+
+    private class ProductGroupVm
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = "";
+        public List<VariantVm> Variants { get; set; } = new();
+    }
+
+    private class VariantVm
+    {
+        public int Id { get; set; }
+        public string Size { get; set; } = "";
+        public int Stock { get; set; }
+    }
+}

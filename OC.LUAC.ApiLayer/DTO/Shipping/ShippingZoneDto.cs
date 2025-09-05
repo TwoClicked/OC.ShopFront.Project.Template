@@ -1,4 +1,7 @@
-﻿namespace OC.LUAC.ApiLayer.DTO.Shipping
+﻿// DTO/ShippingZone/ShippingZoneDto.cs
+using OC.LUAC.ApiLayer.DTO.Shipping;
+
+namespace OC.LUAC.ApiLayer.DTO.ShippingZone
 {
     public class ShippingZoneDto
     {
@@ -7,6 +10,8 @@
         public decimal BaseCost { get; set; }
         public decimal FreeShippingThreshold { get; set; }
         public bool IsDefault { get; set; }
-        public List<string> Countries { get; set; } = new();
+
+        // FIX: now a list of CountryDto instead of string
+        public List<CountryDto> Countries { get; set; } = new();
     }
 }

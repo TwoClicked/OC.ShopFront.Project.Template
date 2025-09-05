@@ -92,21 +92,27 @@ namespace OC.LUAC.ApiLayer.Controllers
             }));
         }
 
-        // GET /api/stock/low?threshold=5
         [HttpGet("low")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<List<object>>> GetLowStock([FromQuery] int threshold = 5)
         {
             var all = await _variants.GetAllVariantsAsync();
-            var low = all.Where(v => v.Stock <= threshold).Select(v => new
-            {
-                v.Id,
-                v.ProductId,
-                v.Size,
-                v.Stock
-            });
+
+            var low = all
+                .Where(v => v.Stock <= threshold)
+                .Select(v => new
+                {
+                    v.Id,
+                    v.ProductId,
+                    NameEn = v.Product?.Name_en ?? "(unknown)",
+                    NameDe = v.Product?.Name_de ?? "(unknown)",
+                    v.Size,
+                    v.Stock
+                });
 
             return Ok(low);
         }
+
+
     }
 }

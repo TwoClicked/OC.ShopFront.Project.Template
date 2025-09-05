@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using OC.LUAC.DataLayer;
 using OC.LUAC.ObjectLayer.Entities;
 using OC.LUAC.ServiceLayer.Interfaces;
@@ -17,15 +18,17 @@ namespace OC.LUAC.ServiceLayer.Services
     {
 
         private readonly AppDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProductService"/> class with the specified database context.
         /// </summary>
         /// <param name="context"></param>
-        public ProductService(AppDbContext context)
+        public ProductService(AppDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         /// <summary>
@@ -129,25 +132,56 @@ namespace OC.LUAC.ServiceLayer.Services
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public async Task<bool> SoftDeleteProductAsync(int id)
+        public async Task<bool> SoftDeleteProductAsync(int productId)
         {
-            // Find the product by ID
-            var product = await _context.Products.FindAsync(id);
+            var product = await _context.Products
+                .Include(p => p.Images)
+                .Include(p => p.Variants)
+                .FirstOrDefaultAsync(p => p.Id == productId);
 
             if (product == null)
+                return false;
+
+            // Mark product deleted
+            product.IsDeleted = true;
+            product.DeletedAt = DateTime.UtcNow;
+
+            // Mark images deleted
+            foreach (var img in product.Images)
             {
-                return false; // Product not found
+                img.IsDeleted = true;
+                img.DeletedAt = DateTime.UtcNow;
             }
 
-            // Mark the product as deleted
-            product.IsDeleted = true;
-            // Set the deletion timestamp
-            product.DeletedAt = DateTime.Now;
+            // Mark variants deleted
+            foreach (var variant in product.Variants)
+            {
+                variant.IsDeleted = true;
+                variant.DeletedAt = DateTime.UtcNow;
+            }
 
             await _context.SaveChangesAsync();
 
-            return true; // Deletion successful
+            // Remove physical image folder
+            try
+            {
+                var productFolder = Path.Combine(
+                    _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"),
+                    "uploads", "products", productId.ToString()
+                );
 
+                if (Directory.Exists(productFolder))
+                {
+                    Directory.Delete(productFolder, recursive: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don’t fail the delete if filesystem cleanup fails
+                Console.WriteLine($"⚠️ Failed to clean up product {productId} folder: {ex.Message}");
+            }
+
+            return true;
         }
 
         public async Task<(IReadOnlyList<Product> Items, int Total)> SearchAsync(string? term, int? categoryId, bool? featured,string sort, bool desc, int page, int pageSize)

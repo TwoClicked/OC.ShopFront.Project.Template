@@ -7,7 +7,6 @@ using OC.LUAC.ServiceLayer.Interfaces;
 
 [ApiController]
 [Route("api/vouchers")]
-[Authorize(Roles = "Admin")]
 public class VoucherController : ControllerBase
 {
     private readonly IVoucherService _vouchers;
@@ -17,13 +16,13 @@ public class VoucherController : ControllerBase
         _vouchers = vouchers;
     }
 
-    // GET /api/vouchers
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<Voucher>>> GetAll()
         => Ok(await _vouchers.GetAllVouchersAsync());
 
-    // GET /api/vouchers/active
     [HttpGet("active")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<Voucher>>> GetActive()
     {
         var all = await _vouchers.GetAllVouchersAsync();
@@ -38,16 +37,47 @@ public class VoucherController : ControllerBase
         return Ok(active);
     }
 
-    // GET /api/vouchers/{code}
     [HttpGet("{code}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Voucher>> GetByCode(string code)
     {
         var voucher = await _vouchers.GetVoucherByCodeAsync(code);
         return voucher == null ? NotFound() : Ok(voucher);
     }
 
-    // POST /api/vouchers
+    [HttpGet("id/{id:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<Voucher>> GetById(int id)
+    {
+        var voucher = await _vouchers.GetVoucherByIdAsync(id);
+        return voucher == null ? NotFound() : Ok(voucher);
+    }
+
+    [HttpGet("validate/{code}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<object>> ValidateVoucher(string code)
+    {
+        var voucher = await _vouchers.GetVoucherByCodeAsync(code);
+        if (voucher == null) return NotFound();
+
+        var now = DateTime.UtcNow;
+        if (!voucher.IsActive || voucher.StartDate > now || voucher.EndDate < now ||
+            (voucher.MaxUsageCount.HasValue && voucher.CurrentUsageCount >= voucher.MaxUsageCount.Value))
+        {
+            return BadRequest("Voucher is not valid.");
+        }
+
+        return Ok(new
+        {
+            voucher.Code,
+            voucher.Percentage,
+            voucher.FixedAmount,
+            voucher.AppliesToShipping
+        });
+    }
+
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Voucher>> Create(CreateVoucherDto dto)
     {
         try
@@ -69,7 +99,7 @@ public class VoucherController : ControllerBase
             };
 
             var created = await _vouchers.CreateVoucherAsync(voucher);
-            return CreatedAtAction(nameof(GetByCode), new { code = created.Code }, created);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Vouchers_Code") == true)
         {
@@ -77,8 +107,8 @@ public class VoucherController : ControllerBase
         }
     }
 
-    // PUT /api/vouchers/{id}
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Voucher>> Update(int id, UpdateVoucherDto dto)
     {
         try
@@ -86,7 +116,6 @@ public class VoucherController : ControllerBase
             var existing = await _vouchers.GetVoucherByIdAsync(id);
             if (existing == null) return NotFound();
 
-            // If admin tries to change code, check uniqueness
             if (!string.Equals(existing.Code, dto.Code, StringComparison.OrdinalIgnoreCase))
             {
                 var duplicate = await _vouchers.GetVoucherByCodeAsync(dto.Code);
@@ -113,8 +142,8 @@ public class VoucherController : ControllerBase
         }
     }
 
-    // PUT /api/vouchers/{id}/toggle
     [HttpPut("{id:int}/toggle")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Voucher>> ToggleActive(int id)
     {
         var existing = await _vouchers.GetVoucherByIdAsync(id);
@@ -125,8 +154,8 @@ public class VoucherController : ControllerBase
         return Ok(updated);
     }
 
-    // DELETE /api/vouchers/{id}
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var ok = await _vouchers.DeleteVoucherAsync(id);

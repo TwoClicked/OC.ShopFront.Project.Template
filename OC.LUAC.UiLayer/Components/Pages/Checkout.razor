@@ -1,13 +1,15 @@
 ﻿@page "/checkout"
 @using System.ComponentModel.DataAnnotations
 @using System.Text.Json
+@using OC.LUAC.ObjectLayer.Orders
 @using OC.LUAC.UiLayer.Services
 @using OC.LUAC.UiLayer.DTO.Checkout
-@using OC.LUAC.ApiLayer.DTO.Shipping   <!-- CountryDto lives here -->
+@using OC.LUAC.ApiLayer.DTO.Shipping  
 @inject CartService Cart
 @inject OrderService Orders
 @inject ShippingService Shipping
 @inject NavigationManager Nav
+@inject HttpClient Http
 
 <section class="py-16 px-6 md:px-12 text-white">
     <h2 class="text-3xl font-bold mb-10 text-center">Checkout</h2>
@@ -85,6 +87,38 @@
                         }
                     </ul>
 
+                    <!-- Voucher input -->
+                    <div class="mt-4 border-t border-neutral-700 pt-4">
+                        <label class="block mb-1">Voucher Code</label>
+                        <div class="flex gap-2">
+                            <InputText @bind-Value="voucherCode"
+                                       class="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-l p-2" />
+                            <button type="button"
+                                    class="px-4 py-2 bg-neutral-700 rounded-r hover:bg-amber-700 whitespace-nowrap"
+                                    @onclick="ApplyVoucher">
+                                Apply
+                            </button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(voucherError))
+                        {
+                            <p class="text-red-400 text-sm mt-1">@voucherError</p>
+                        }
+                        @if (voucherDiscount > 0 && !appliesToShipping)
+                        {
+                            <div class="flex justify-between mt-2 text-green-400">
+                                <span>Discount</span>
+                                <span>-@voucherDiscount.ToString("C")</span>
+                            </div>
+                        }
+                        @if (voucherDiscount > 0 && appliesToShipping)
+                        {
+                            <div class="flex justify-between mt-2 text-green-400">
+                                <span>Voucher + Free shipping</span>
+                                <span>-@voucherDiscount.ToString("C")</span>
+                            </div>
+                        }
+                    </div>
+
                     <!-- Shipping line -->
                     <div class="border-t border-neutral-700 mt-4 pt-4 flex justify-between">
                         <span class="font-semibold">Shipping</span>
@@ -93,7 +127,7 @@
                         {
                             <span class="text-gray-400">—</span>
                         }
-                        else if (quote.IsFree)
+                        else if (quote.IsFree || appliesToShipping)
                         {
                             <span class="text-amber-500">Free</span>
                         }
@@ -126,8 +160,13 @@
     private string? error;
     private ShippingQuote? quote;
 
+    private string voucherCode = "";
+    private decimal voucherDiscount = 0m;
+    private string? voucherError;
+    private bool appliesToShipping = false;
+
     private decimal CartSubtotal => Cart.GetTotal();
-    private decimal GrandTotal => CartSubtotal + (quote?.ShippingCost ?? 0);
+    private decimal GrandTotal => Math.Max(0, CartSubtotal + (quote?.ShippingCost ?? 0) - voucherDiscount);
 
     private List<CountryDto> Countries = new();
 
@@ -188,7 +227,8 @@
                         Size = i.Size,
                         Price = i.Price,
                         Quantity = i.Quantity
-                    }).ToList()
+                    }).ToList(),
+                    VoucherCode = string.IsNullOrWhiteSpace(voucherCode) ? null : voucherCode
                 };
 
         try
@@ -215,6 +255,13 @@
             }
 
             quote = await Shipping.GetQuoteAsync(vm.Shipping.Country, CartSubtotal);
+
+            // If shipping voucher was applied, reapply discount
+            if (appliesToShipping)
+            {
+                await ApplyVoucher();
+            }
+
             StateHasChanged();
         }
         catch (Exception ex)
@@ -222,6 +269,57 @@
             Console.WriteLine("❌ Failed to load shipping quote: " + ex.Message);
             quote = null;
         }
+    }
+
+    private async Task ApplyVoucher()
+    {
+        voucherError = null;
+        voucherDiscount = 0;
+        appliesToShipping = false;
+
+        if (string.IsNullOrWhiteSpace(voucherCode))
+        {
+            voucherError = "Please enter a voucher code.";
+            return;
+        }
+
+        try
+        {
+            var voucher = await Http.GetFromJsonAsync<VoucherResult>($"/api/vouchers/validate/{voucherCode}");
+            if (voucher == null)
+            {
+                voucherError = "Invalid voucher.";
+                return;
+            }
+
+            // percentage discount
+            if (voucher.Percentage.HasValue)
+                voucherDiscount += CartSubtotal * (voucher.Percentage.Value / 100m);
+
+            // fixed amount discount
+            if (voucher.FixedAmount.HasValue)
+                voucherDiscount += voucher.FixedAmount.Value;
+
+            // applies to shipping
+            if (voucher.AppliesToShipping && quote is not null && !quote.IsFree)
+            {
+                appliesToShipping = true;
+                voucherDiscount += quote.ShippingCost;
+            }
+        }
+        catch
+        {
+            voucherError = "Invalid voucher code.";
+        }
+    }
+
+
+    private class VoucherResult
+    {
+        public string Code { get; set; } = "";
+        public decimal? Percentage { get; set; }
+        public decimal? FixedAmount { get; set; }
+        public bool AppliesToShipping { get; set; }
     }
 
     private class CheckoutVm

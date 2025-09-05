@@ -10,10 +10,15 @@ public class ShippingZoneService : IShippingZoneService
     public ShippingZoneService(AppDbContext context) => _context = context;
 
     public async Task<List<ShippingZone>> GetAllZonesAsync() =>
-        await _context.ShippingZones.Include(z => z.Countries).OrderBy(z => z.Name).ToListAsync();
+        await _context.ShippingZones
+            .Include(z => z.Countries)
+            .OrderBy(z => z.Name)
+            .ToListAsync();
 
     public async Task<ShippingZone?> GetZoneByIdAsync(int id) =>
-        await _context.ShippingZones.Include(z => z.Countries).FirstOrDefaultAsync(z => z.Id == id);
+        await _context.ShippingZones
+            .Include(z => z.Countries)
+            .FirstOrDefaultAsync(z => z.Id == id);
 
     public async Task<ShippingZone?> GetZoneByCountryAsync(string countryCode)
     {
@@ -32,13 +37,14 @@ public class ShippingZoneService : IShippingZoneService
             .FirstOrDefaultAsync(z => z.IsDefault);
     }
 
-
     public async Task<ShippingZone> CreateZoneAsync(ShippingZone zone)
     {
         // Ensure only one default
         if (zone.IsDefault)
+        {
             foreach (var other in _context.ShippingZones.Where(z => z.IsDefault))
                 other.IsDefault = false;
+        }
 
         // Normalize country codes
         if (zone.Countries != null)
@@ -81,7 +87,10 @@ public class ShippingZoneService : IShippingZoneService
 
     public async Task<bool> DeleteZoneAsync(int id)
     {
-        var zone = await _context.ShippingZones.Include(z => z.Countries).FirstOrDefaultAsync(z => z.Id == id);
+        var zone = await _context.ShippingZones
+            .Include(z => z.Countries)
+            .FirstOrDefaultAsync(z => z.Id == id);
+
         if (zone == null) return false;
 
         _context.ShippingZones.Remove(zone);
@@ -89,32 +98,36 @@ public class ShippingZoneService : IShippingZoneService
         return true;
     }
 
-    // NEW: replace country mapping atomically
-    public async Task SetCountriesAsync(int zoneId, IEnumerable<string> countryCodes)
+    // ✅ replace country mapping atomically (with code + name)
+    public async Task SetCountriesAsync(int zoneId, IEnumerable<(string Code, string Name)> countries)
     {
-        var zone = await _context.ShippingZones.Include(z => z.Countries).FirstOrDefaultAsync(z => z.Id == zoneId);
-        if (zone == null) throw new KeyNotFoundException("Zone not found.");
+        var zone = await _context.ShippingZones
+            .Include(z => z.Countries)
+            .FirstOrDefaultAsync(z => z.Id == zoneId);
 
-        var codes = countryCodes
-            .Where(c => !string.IsNullOrWhiteSpace(c))
-            .Select(c => c.Trim().ToUpperInvariant())
-            .Distinct()
-            .ToList();
+        if (zone == null) throw new KeyNotFoundException("Zone not found.");
 
         _context.ShippingZoneCountries.RemoveRange(zone.Countries);
         await _context.SaveChangesAsync();
 
-        foreach (var code in codes)
-            _context.ShippingZoneCountries.Add(new ShippingZoneCountry { ShippingZoneId = zoneId, CountryCode = code });
+        foreach (var c in countries.Where(c => !string.IsNullOrWhiteSpace(c.Code)))
+        {
+            _context.ShippingZoneCountries.Add(new ShippingZoneCountry
+            {
+                ShippingZoneId = zoneId,
+                CountryCode = c.Code.Trim().ToUpperInvariant(),
+                CountryName = c.Name?.Trim() ?? string.Empty
+            });
+        }
 
         await _context.SaveChangesAsync();
     }
 
-    // NEW: set one default
     public async Task SetDefaultAsync(int zoneId)
     {
         foreach (var z in _context.ShippingZones)
             z.IsDefault = z.Id == zoneId;
+
         await _context.SaveChangesAsync();
     }
 }

@@ -67,7 +67,7 @@ else
 
         <!-- Variants & Stock -->
         <div class="mt-8">
-            <h3 class="text-lg font-semibold text-amber-500 mb-2">Variants & Stock</h3>
+            <h3 class="text-lg font-semibold text-amber-600 mb-2">Variants & Stock</h3>
             <table class="w-full text-sm border-collapse">
                 <thead class="bg-neutral-900 text-gray-400">
                     <tr>
@@ -91,11 +91,8 @@ else
 
         <!-- Images -->
         <div class="mt-8">
-            <h3 class="text-lg font-semibold text-amber-500 mb-2">Product Images</h3>
+            <h3 class="text-lg font-semibold text-amber-600 mb-2">Product Images</h3>
             <InputFile OnChange="HandleImageUpload" multiple class="mb-4" />
-
-            <p class="text-sm text-gray-400 mb-2">First image is used as thumbnail.</p>
-
             <div class="grid grid-cols-6 gap-4">
                 @foreach (var img in product.Images.OrderBy(i => i.SortOrder))
                 {
@@ -108,11 +105,18 @@ else
                             <span class="absolute top-1 left-1 bg-amber-600 text-xs text-white px-2 py-0.5 rounded">Thumbnail</span>
                         }
 
-                        <button type="button"
-                                class="absolute bottom-1 right-1 bg-red-600 text-xs text-white px-2 py-0.5 rounded"
-                                @onclick="() => RemoveImage(img)">
-                            Remove
-                        </button>
+                        <div class="absolute bottom-1 left-1 flex space-x-1">
+                            <button type="button"
+                                    class="bg-amber-600 text-xs text-white px-2 py-0.5 rounded"
+                                    @onclick="() => SetThumbnail(img)">
+                                Set as Thumbnail
+                            </button>
+                            <button type="button"
+                                    class="bg-red-600 text-xs text-white px-2 py-0.5 rounded"
+                                    @onclick="() => RemoveImage(img)">
+                                X
+                            </button>
+                        </div>
                     </div>
                 }
             </div>
@@ -232,6 +236,35 @@ else
         if (response.IsSuccessStatusCode)
         {
             product.Images.Remove(img);
+        }
+    }
+
+    private async Task SetThumbnail(ProductImageDto selected)
+    {
+        if (product == null) return;
+
+        // Move selected image to the front
+        int sort = 1;
+        foreach (var img in product.Images.OrderBy(i => i.Id))
+        {
+            img.SortOrder = (img.Id == selected.Id) ? 0 : sort++;
+        }
+
+        // Send reorder to API
+        var items = product.Images.Select(i => new
+        {
+            ImageId = i.Id,
+            SortOrder = i.SortOrder
+        }).ToList();
+
+        var token = await AdminAuth.GetTokenAsync();
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.PutAsJsonAsync($"products/{product.Id}/images/reorder", items);
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("⚠️ Failed to update thumbnail.");
         }
     }
 
