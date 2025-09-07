@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using OC.LUAC.ObjectLayer.Chat;
+using OC.LUAC.ApiLayer.DTO.Common;
 using OC.LUAC.ServiceLayer.Interfaces;
 
 namespace OC.LUAC.ApiLayer.Hubs
@@ -15,13 +15,17 @@ namespace OC.LUAC.ApiLayer.Hubs
             _chatService = chatService;
         }
 
-        // Customer starts a chat session
+        // Customer starts or reuses a chat session
         [Authorize(Roles = "Customer")]
         public async Task<int> StartSession()
         {
-            var customerId = int.Parse(Context.User!.FindFirst("id")!.Value);
+            var customerIdClaim = Context.User?.FindFirst("customerId")?.Value;
+            if (string.IsNullOrEmpty(customerIdClaim))
+                throw new HubException("No customerId claim found in token.");
 
-            var session = await _chatService.StartChatSessionAsync(customerId, null);
+            var customerId = int.Parse(customerIdClaim);
+
+            var session = await _chatService.GetOrCreateActiveSessionForCustomerAsync(customerId);
 
             // put customer in their session group
             await Groups.AddToGroupAsync(Context.ConnectionId, $"session_{session.Id}");
@@ -37,15 +41,15 @@ namespace OC.LUAC.ApiLayer.Hubs
 
             var chatMessage = await _chatService.SendMessageAsync(sessionId, message, isCustomer);
 
-            // Broadcast to everyone in this chat session
+            // Broadcast to everyone in this chat session (typed DTO)
             await Clients.Group($"session_{sessionId}")
-                .SendAsync("ReceiveMessage", new
+                .SendAsync("ReceiveMessage", new ChatMessageDto
                 {
-                    chatMessage.Id,
-                    chatMessage.ChatSessionId,
-                    chatMessage.Message,
-                    chatMessage.IsFromCustomer,
-                    chatMessage.SentAt
+                    Id = chatMessage.Id,
+                    ChatSessionId = chatMessage.ChatSessionId,
+                    Message = chatMessage.Message,
+                    IsFromCustomer = chatMessage.IsFromCustomer,
+                    SentAt = chatMessage.SentAt
                 });
         }
 

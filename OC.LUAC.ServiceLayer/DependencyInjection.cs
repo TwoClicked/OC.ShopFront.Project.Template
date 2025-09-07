@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using OC.LUAC.DataLayer;
-using DiscordRPC;
 using Microsoft.Extensions.Configuration;
 using OC.LUAC.ServiceLayer.Services;
 using OC.LUAC.ServiceLayer.Interfaces;

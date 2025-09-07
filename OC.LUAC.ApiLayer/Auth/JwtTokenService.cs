@@ -41,7 +41,8 @@ namespace OC.LUAC.ApiLayer.Auth
             {
                 new Claim(JwtRegisteredClaimNames.Sub, email),
                 new Claim("adminEmail", email), // explicit admin identifier
-                new Claim("role", "Admin")
+                new Claim("role", "Admin"),
+                new Claim(ClaimTypes.Role, "Admin") // 🔑 use ClaimTypes.Role
             };
 
             return CreateToken(claims);

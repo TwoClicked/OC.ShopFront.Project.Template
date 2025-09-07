@@ -1,0 +1,136 @@
+﻿@page "/admin/chat/session/{SessionId:int}"
+@using OC.LUAC.UiLayer.DTO.Chat
+@inject ChatClientService ChatClient
+@inject AdminAuthService Auth
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+
+<h2 class="text-2xl font-bold mb-4 text-amber-600">
+    @if (session == null)
+    {
+        <span>Loading session...</span>
+    }
+    else
+    {
+        <span>
+            Chat with @session.CustomerFirstName @session.CustomerLastName
+            (<span class="text-amber-600">@session.CustomerEmail</span>)
+        </span>
+    }
+</h2>
+
+<button class="mb-4 bg-gray-600 text-white px-3 py-1 rounded" @onclick="GoBack">⬅ Back to Sessions</button>
+
+<div class="border border-neutral-700 p-3 rounded bg-neutral-900 max-h-80 overflow-y-auto mb-3">
+    @foreach (var msg in messages)
+    {
+        <div class="mb-2 @(msg.IsFromCustomer ? "text-White" : "text-amber-600")">
+            <strong>@(msg.IsFromCustomer ? "Customer" : "Admin"):</strong> @msg.Message
+        </div>
+    }
+</div>
+
+@if (!sessionClosed)
+{
+    <div class="flex space-x-2">
+        <input type="text"
+               @bind="currentMessage"
+               @bind:event="oninput"
+               placeholder="Type a reply..."
+               class="flex-grow bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+               @onkeydown="HandleKeyPress" />
+        <button @onclick="SendMessage"
+                class="bg-amber-600 text-white px-4 py-2 rounded">
+            Send
+        </button>
+        <button @onclick="CloseChat"
+                class="bg-red-600 text-white px-4 py-2 rounded">
+            Close Chat
+        </button>
+    </div>
+}
+else
+{
+    <div class="text-red-400 font-semibold">⚠️ This chat session has been closed.</div>
+}
+
+@code {
+    [Parameter] public int SessionId { get; set; }
+
+    private ChatSessionDto? session;
+    private List<ChatMessageDto> messages = new();
+    private string currentMessage = "";
+    private bool sessionClosed;
+    private string? token;
+    private bool initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !initialized)
+        {
+            initialized = true;
+
+            token = await Auth.GetTokenAsync();
+            if (string.IsNullOrWhiteSpace(token)) return;
+
+            await ChatClient.ConnectAsync(token);
+            await ChatClient.JoinSessionAsync(SessionId);
+
+            var http = HttpClientFactory.CreateClient("ApiClient");
+            http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // ✅ Load session details
+            session = await http.GetFromJsonAsync<ChatSessionDto>($"chat/sessions/{SessionId}/details");
+
+            // ✅ Load history
+            var history = await http.GetFromJsonAsync<List<ChatMessageDto>>($"chat/sessions/{SessionId}/messages");
+            if (history != null) messages.AddRange(history);
+
+            ChatClient.OnMessageReceived += (msg) =>
+            {
+                if (msg.ChatSessionId == SessionId)
+                {
+                    messages.Add(msg);
+                    InvokeAsync(StateHasChanged);
+                }
+            };
+
+            ChatClient.OnSessionClosed += (closedId) =>
+            {
+                if (closedId == SessionId)
+                {
+                    sessionClosed = true;
+                    InvokeAsync(StateHasChanged);
+                }
+            };
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(currentMessage)) return;
+
+        await ChatClient.SendMessageAsync(SessionId, currentMessage.Trim());
+        currentMessage = "";
+    }
+
+    private async Task CloseChat()
+    {
+        if (SessionId > 0 && !string.IsNullOrWhiteSpace(token))
+        {
+            await ChatClient.CloseSessionAsync(SessionId, token);
+            sessionClosed = true;
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await SendMessage();
+    }
+
+    private void GoBack() => Nav.NavigateTo("/admin?tab=Chat");
+}

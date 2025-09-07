@@ -1,0 +1,105 @@
+﻿@page "/admin/chat"
+@using OC.LUAC.UiLayer.DTO.Chat
+@inject AdminAuthService Auth
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+
+<h2 class="text-2xl font-bold mb-4 text-amber-600">Live Customer Chats</h2>
+
+<!-- Filter + Pagination -->
+<div class="flex justify-between items-center mb-4">
+    <input type="text"
+           @bind="filterEmail"
+           @bind:event="oninput"
+           placeholder="Filter by customer email..."
+           class="bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white w-1/3" />
+
+    <select @bind="pageSize"
+            class="bg-neutral-800 border border-neutral-600 rounded px-2 py-1 text-white">
+        <option value="8">8</option>
+        <option value="16">16</option>
+        <option value="24">24</option>
+    </select>
+</div>
+
+@if (sessions == null)
+{
+    <p class="text-gray-400">Loading sessions...</p>
+}
+else
+{
+    <div class="space-y-3">
+        @foreach (var s in PagedSessions)
+        {
+            <div class="flex justify-between items-center border-b border-neutral-700 pb-2">
+                <div>
+                    <strong>@s.CustomerFirstName @s.CustomerLastName</strong>
+                    (<span class="text-amber-600">@s.CustomerEmail</span>)
+                    <div class="text-gray-400 text-sm">
+                        Awaiting reply:
+                        <span class="text-white">
+                            @(s.LastMessageFromCustomer ? "Admin Review" : "Customer")
+                        </span>
+                    </div>
+                </div>
+
+                <button class="bg-amber-600 text-white px-3 py-1 rounded"
+                        @onclick='() => Nav.NavigateTo($"/admin/chat/session/{s.Id}")'>
+                    Join
+                </button>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="flex justify-center mt-4 space-x-2">
+        @for (int i = 1; i <= TotalPages; i++)
+        {
+            <button class="px-3 py-1 rounded @(i == currentPage ? "bg-amber-600 text-white" : "bg-neutral-700 text-gray-300")"
+                    @onclick="() => GoToPage(i)">
+                @i
+            </button>
+        }
+    </div>
+}
+
+@code {
+    private List<ChatSessionDto>? sessions;
+    private string filterEmail = "";
+    private int pageSize = 8;
+    private int currentPage = 1;
+    private string? token;
+    private bool initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !initialized)
+        {
+            initialized = true;
+
+            token = await Auth.GetTokenAsync();
+            if (string.IsNullOrWhiteSpace(token)) return;
+
+            var http = HttpClientFactory.CreateClient("ApiClient");
+            http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            sessions = await http.GetFromJsonAsync<List<ChatSessionDto>>("chat/sessions/active");
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ChatSessionDto> FilteredSessions =>
+        string.IsNullOrWhiteSpace(filterEmail)
+            ? sessions ?? new List<ChatSessionDto>()
+            : sessions?.Where(s => s.CustomerEmail.Contains(filterEmail, StringComparison.OrdinalIgnoreCase))
+                ?? new List<ChatSessionDto>();
+
+    private IEnumerable<ChatSessionDto> PagedSessions =>
+        FilteredSessions.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    private int TotalPages =>
+        (int)Math.Ceiling((double)(FilteredSessions.Count()) / pageSize);
+
+    private void GoToPage(int page) => currentPage = page;
+}

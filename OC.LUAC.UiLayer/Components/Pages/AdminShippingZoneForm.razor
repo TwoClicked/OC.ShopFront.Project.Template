@@ -9,7 +9,7 @@
     @(ZoneId == null ? "Add Shipping Zone" : "Edit Shipping Zone")
 </h2>
 
-<EditForm Model="@vm" OnValidSubmit="@SaveZone">
+<AutoForm Model="@vm" OnValidSubmit="@SaveZone">
     <DataAnnotationsValidator />
     <ValidationSummary class="text-red-400 mb-4" />
 
@@ -93,7 +93,7 @@
     {
         <p class="text-red-400 mt-4">@error</p>
     }
-</EditForm>
+</AutoForm>
 
 @code {
     [Parameter] public int? ZoneId { get; set; }

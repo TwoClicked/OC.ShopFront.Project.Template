@@ -26,7 +26,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 max-w-7xl mx-auto">
             <!-- Left: Addresses -->
             <div class="lg:col-span-2 space-y-10">
-                <EditForm Model="@vm" OnValidSubmit="@Submit">
+                <AutoForm Model="@vm" OnValidSubmit="@Submit">
                     <DataAnnotationsValidator />
                     <ValidationSummary class="text-red-400 mb-4" />
 
@@ -61,7 +61,7 @@
                     {
                         <div class="mt-4 text-red-400">@error</div>
                     }
-                </EditForm>
+                </AutoForm>
             </div>
 
             <!-- Right: Order Summary -->

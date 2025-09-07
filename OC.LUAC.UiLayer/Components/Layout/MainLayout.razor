@@ -76,13 +76,19 @@
                 {
                     <!-- Customer Account -->
                     <li>
+                        <NavLink href="/chat" Match="NavLinkMatch.Prefix"
+                                 class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
+                                 activeClass="text-amber-600 font-medium">
+                            Live Chat
+                        </NavLink>
+                    </li>
+                    <li>
                         <NavLink href="/account" Match="NavLinkMatch.Prefix"
                                  class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                                  activeClass="text-amber-600 font-medium">
                             Account
                         </NavLink>
                     </li>
-
                     <!-- Logout -->
                     <li>
                         <button @onclick="LogoutCustomer"

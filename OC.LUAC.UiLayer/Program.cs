@@ -1,7 +1,8 @@
-using OC.LUAC.UiLayer.Components;
+﻿using OC.LUAC.UiLayer.Components;
 using OC.LUAC.UiLayer.Services;
 using Blazored.LocalStorage;
 using System.Text.Json;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,7 @@ builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<ShippingService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AdminAuthService>();
+builder.Services.AddScoped<ChatClientService>();
 
 // ---- HttpClient Setup ----
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"];

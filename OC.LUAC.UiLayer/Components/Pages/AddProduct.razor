@@ -10,7 +10,7 @@
 @if (!productCreated)
 {
     <!-- Create Product Form -->
-    <EditForm Model="model" OnValidSubmit="HandleValidSubmit">
+    <AutoForm Model="model" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
@@ -104,7 +104,7 @@
                 Cancel
             </button>
         </div>
-    </EditForm>
+    </AutoForm>
 }
 else
 {

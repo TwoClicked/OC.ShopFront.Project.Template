@@ -25,7 +25,7 @@
             }
             else
             {
-                <EditForm Model="@profile" OnValidSubmit="UpdateProfile">
+                <AutoForm Model="@profile" OnValidSubmit="UpdateProfile">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
 
@@ -60,14 +60,14 @@
                     class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
                         Save Changes
                     </button>
-                </EditForm>
+                </AutoForm>
             }
         }
 
         <!-- Change Password -->
         @if (ActiveTab == "password")
         {
-            <EditForm Model="@passwordModel" OnValidSubmit="ChangePassword">
+            <AutoForm Model="@passwordModel" OnValidSubmit="ChangePassword">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
@@ -92,7 +92,7 @@
                 class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
                     Change Password
                 </button>
-            </EditForm>
+            </AutoForm>
         }
 
         <!-- Orders -->

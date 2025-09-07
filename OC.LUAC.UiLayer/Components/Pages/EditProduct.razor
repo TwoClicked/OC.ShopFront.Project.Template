@@ -17,7 +17,7 @@ else if (product == null)
 }
 else
 {
-    <EditForm Model="product" OnValidSubmit="HandleSave">
+    <AutoForm Model="product" OnValidSubmit="HandleSave">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
@@ -131,7 +131,7 @@ else
                 Cancel
             </button>
         </div>
-    </EditForm>
+    </AutoForm>
 }
 
 @code {

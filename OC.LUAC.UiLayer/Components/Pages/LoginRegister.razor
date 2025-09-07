@@ -1,4 +1,5 @@
 ﻿@page "/loginRegister"
+@using OC.LUAC.UiLayer.Components.Shared
 @using OC.LUAC.UiLayer.DTO.Auth
 @using OC.LUAC.UiLayer.Services
 @inject AuthService AuthService
@@ -18,7 +19,7 @@
         <!-- Login Form -->
         @if (ActiveTab == "login")
         {
-            <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+            <AutoForm Model="@loginModel" OnValidSubmit="HandleLogin">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
@@ -54,13 +55,13 @@
                         @Message
                     </p>
                 }
-            </EditForm>
+            </AutoForm>
         }
 
         <!-- Register Form -->
         @if (ActiveTab == "register")
         {
-            <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+            <AutoForm Model="@registerModel" OnValidSubmit="HandleRegister">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
@@ -108,7 +109,7 @@
                 {
                     <p class="text-center text-red-500 mt-3">@Message</p>
                 }
-            </EditForm>
+            </AutoForm>
         }
     </div>
 </div>

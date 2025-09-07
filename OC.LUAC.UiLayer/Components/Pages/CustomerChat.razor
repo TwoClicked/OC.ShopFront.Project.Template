@@ -1,0 +1,214 @@
+﻿@page "/chat"
+@inject ChatClientService ChatClient
+@inject AuthService Auth
+
+<h2 class="text-2xl font-bold mb-4 text-amber-600">Live Chat</h2>
+
+@if (!started)
+{
+    <button @onclick="StartSession"
+            class="bg-amber-600 text-white px-4 py-2 rounded">
+        Start Chat
+    </button>
+}
+else
+{
+    <div class="border border-neutral-700 p-3 rounded bg-neutral-900 max-h-80 overflow-y-auto mb-3">
+        @foreach (var msg in messages)
+        {
+            <div class="mb-2 @(msg.IsSystem
+                                                 ? "text-gray-400"
+                                                 : msg.IsFromCustomer ? "text-amber-600" : "text-green-400")">
+                                                                                                           <strong>
+                    @(msg.IsSystem
+                                ? "[System]"
+                                : msg.IsFromCustomer ? "You" : "Admin"):
+        </strong> @msg.Text
+    </div>
+        }
+    </div>
+
+    @if (!sessionClosed)
+    {
+        <div class="flex space-x-2">
+            <input type="text"
+                   @bind="currentMessage"
+                   @bind:event="oninput"
+                   placeholder="Type a message..."
+                   class="flex-grow bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                   @onkeydown="HandleKeyPress" />
+            <button @onclick="SendMessage"
+                    class="bg-amber-600 text-white px-4 py-2 rounded">
+                Send
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="text-red-400 font-semibold">⚠️ This chat session has been closed by an admin.</div>
+    }
+}
+
+@code {
+    private int sessionId;
+    private bool started = false;
+    private bool sessionClosed = false;
+    private string currentMessage = "";
+    private readonly List<ChatVm> messages = new();
+    private bool initialized = false;
+    private string? token;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !initialized)
+        {
+            initialized = true;
+
+            token = await Auth.GetTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                messages.Add(new ChatVm
+                {
+                    Text = "⚠️ You must be logged in to start chat.",
+                    IsSystem = true
+                });
+                StateHasChanged();
+                return;
+            }
+
+            await ChatClient.ConnectAsync(token);
+
+            ChatClient.OnMessageReceived += async (msg) =>
+            {
+                await InvokeAsync(() =>
+                {
+                    messages.Add(new ChatVm
+                    {
+                        Text = msg.Message ?? "",
+                        IsFromCustomer = msg.IsFromCustomer
+                    });
+                    StateHasChanged();
+                });
+            };
+
+            ChatClient.OnSessionClosed += async (closedSessionId) =>
+            {
+                if (sessionId == closedSessionId)
+                {
+                    await InvokeAsync(() =>
+                    {
+                        sessionClosed = true;
+                        messages.Add(new ChatVm
+                        {
+                            Text = "⚠️ Chat session has been closed.",
+                            IsSystem = true
+                        });
+                        StateHasChanged();
+                    });
+                }
+            };
+
+            // Load existing session + history
+            try
+            {
+                sessionId = await ChatClient.StartSessionAsync(token);
+                started = true;
+                sessionClosed = false;
+
+                // Add system message when session starts
+                messages.Add(new ChatVm
+                {
+                    Text = "💬 Thank you for reaching out. An admin will review your message and get back to you within 24 hours. Please explain your issue in as much detail as possible so we can assist you effectively.",
+                    IsSystem = true
+                });
+
+                var history = await ChatClient.GetMyMessagesAsync(token);
+                if (history != null)
+                {
+                    foreach (var h in history)
+                    {
+                        messages.Add(new ChatVm
+                        {
+                            Text = h.Message,
+                            IsFromCustomer = h.IsFromCustomer
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                messages.Add(new ChatVm
+                {
+                    Text = $"⚠️ Failed to load history: {ex.Message}",
+                    IsSystem = true
+                });
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartSession()
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return;
+
+        sessionId = await ChatClient.StartSessionAsync(token);
+        started = true;
+        sessionClosed = false;
+
+        // Add system message right when chat starts
+        messages.Add(new ChatVm
+        {
+            Text = "💬 An admin will be with you shortly.",
+            IsSystem = true
+        });
+
+        var history = await ChatClient.GetMyMessagesAsync(token);
+        if (history != null)
+        {
+            foreach (var h in history)
+            {
+                messages.Add(new ChatVm
+                {
+                    Text = h.Message,
+                    IsFromCustomer = h.IsFromCustomer
+                });
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(currentMessage)) return;
+
+        var text = currentMessage.Trim();
+        currentMessage = "";
+
+        messages.Add(new ChatVm
+        {
+            Text = text,
+            IsFromCustomer = true
+        });
+        StateHasChanged();
+
+        await ChatClient.SendMessageAsync(sessionId, text);
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private class ChatVm
+    {
+        public string Text { get; set; } = "";
+        public bool IsFromCustomer { get; set; }
+        public bool IsSystem { get; set; }
+    }
+}
