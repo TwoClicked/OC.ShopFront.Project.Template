@@ -260,13 +260,16 @@ namespace OC.LUAC.ApiLayer.Controllers
             }
 
             totalAfterDiscount += shippingCost;
+            var customer = await _customers.GetCustomerByIdAsync(customerId);
+            if (customer == null)
+                return BadRequest("Customer not found after order creation.");
 
             // ---- build order ----
             var order = new Order
             {
                 OrderNumber = GenerateOrderNumber(),
                 CustomerId = customerId,
-                Language = dto.Language ?? "en",
+                Language = customer.Language ?? "en",
                 ShippingStreet = dto.ShippingStreet,
                 ShippingNumber = dto.ShippingNumber,
                 ShippingPostalCode = dto.ShippingPostalCode,
@@ -288,9 +291,7 @@ namespace OC.LUAC.ApiLayer.Controllers
             // ---- generate PDF & send confirmation email ----
             var pdf = PdfGenerator.GenerateOrderPdf(created);
 
-            var customer = await _customers.GetCustomerByIdAsync(customerId);
-            if (customer == null)
-                return BadRequest("Customer not found after order creation.");
+
 
             var lang = created.Language ?? "en";
             var t = Localization.T;

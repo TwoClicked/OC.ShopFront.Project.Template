@@ -53,8 +53,9 @@
 
                     <!-- Place order -->
                     <button type="submit"
-                            class="px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700">
-                        Place Order
+                            class="px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700"
+                            disabled="@isSubmitting">
+                        @(isSubmitting ? "Placing Order..." : "Place Order")
                     </button>
 
                     @if (!string.IsNullOrEmpty(error))
@@ -159,6 +160,7 @@
     private CheckoutVm vm = new();
     private string? error;
     private ShippingQuote? quote;
+    private bool isSubmitting = false;
 
     private string voucherCode = "";
     private decimal voucherDiscount = 0m;
@@ -200,8 +202,11 @@
 
     private async Task Submit()
     {
+        if (isSubmitting) return; // prevent double submission
+
         error = null;
 
+        // Check validation *before* locking the button
         var oos = Cart.Items.FirstOrDefault(i => i.MaxStock <= 0 || i.Quantity > i.MaxStock);
         if (oos is not null)
         {
@@ -216,23 +221,25 @@
             return;
         }
 
-        var payload = new CheckoutRequestDto
-                {
-                    Shipping = vm.Shipping,
-                    Billing = vm.BillingSameAsShipping ? null : vm.Billing,
-                    Items = Cart.Items.Select(i => new CheckoutItemDto
-                    {
-                        ProductId = i.ProductId,
-                        ProductVariantId = i.ProductVariantId,
-                        Size = i.Size,
-                        Price = i.Price,
-                        Quantity = i.Quantity
-                    }).ToList(),
-                    VoucherCode = string.IsNullOrWhiteSpace(voucherCode) ? null : voucherCode
-                };
+        isSubmitting = true; //  lock button only now
 
         try
         {
+            var payload = new CheckoutRequestDto
+            {
+                Shipping = vm.Shipping,
+                Billing = vm.BillingSameAsShipping ? null : vm.Billing,
+                Items = Cart.Items.Select(i => new CheckoutItemDto
+                {
+                    ProductId = i.ProductId,
+                    ProductVariantId = i.ProductVariantId,
+                    Size = i.Size,
+                    Price = i.Price,
+                    Quantity = i.Quantity
+                }).ToList(),
+                VoucherCode = string.IsNullOrWhiteSpace(voucherCode) ? null : voucherCode
+            };
+
             var resp = await Orders.PlaceOrderAsync(payload);
             await Cart.ClearCart();
             Nav.NavigateTo($"/thank-you/{Uri.EscapeDataString(resp.OrderId)}");
@@ -242,7 +249,14 @@
             error = "Could not place order. Please try again, make sure all fields marked with * are filled!";
             Console.WriteLine("❌ " + ex.Message);
         }
+        finally
+        {
+            // always reset if failed
+            isSubmitting = false;
+        }
     }
+
+
 
     private async Task UpdateQuote()
     {
