@@ -3,17 +3,18 @@
 @using OC.LUAC.UiLayer.Services
 @inject CartService CartService
 @inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<OC.LUAC.UiLayer.Components.Pages.Cart> L
 
 <section class="py-16 px-6 md:px-12 text-white">
-    <h2 class="text-3xl font-bold mb-8 text-center">Your Cart</h2>
+    <h2 class="text-3xl font-bold mb-8 text-center">@L["Title"]</h2>
 
     @if (loading)
     {
-        <p class="text-center text-gray-400">Loading your cart...</p>
+        <p class="text-center text-gray-400">@L["LoadingCart"]</p>
     }
     else if (!CartService.Items.Any())
     {
-        <p class="text-center text-gray-400">Your cart is empty.</p>
+        <p class="text-center text-gray-400">@L["CartEmpty"]</p>
     }
     else
     {
@@ -21,11 +22,11 @@
             <table class="w-full text-left">
                 <thead class="text-gray-300">
                     <tr>
-                        <th class="py-2 text-center">Product</th>
-                        <th class="py-2 text-center">Size</th>
-                        <th class="py-2 text-center">Price</th>
-                        <th class="py-2 text-center">Quantity</th>
-                        <th class="py-2 text-center">Subtotal</th>
+                        <th class="py-2 text-center">@L["Product"]</th>
+                        <th class="py-2 text-center">@L["Size"]</th>
+                        <th class="py-2 text-center">@L["Price"]</th>
+                        <th class="py-2 text-center">@L["Quantity"]</th>
+                        <th class="py-2 text-center">@L["Subtotal"]</th>
                         <th class="py-2"></th>
                     </tr>
                 </thead>
@@ -67,7 +68,7 @@
                             <td class="py-4 text-center">
                                 <button class="px-3 py-2 bg-neutral-900 rounded hover:bg-neutral-700"
                                         @onclick="() => Remove(item)">
-                                    Remove
+                                    @L["Remove"]
                                 </button>
                             </td>
                         </tr>
@@ -78,14 +79,13 @@
             <!-- Cart Total -->
             <div class="mt-6 text-right">
                 <p class="text-xl">
-                    Total:
+                    @L["Total"]:
                     <span class="text-amber-600">@CartService.GetTotal().ToString("C")</span>
                 </p>
                 <button class="mt-4 px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700"
                         @onclick="@(() => Nav.NavigateTo("/checkout"))">
-                    Checkout
+                    @L["Checkout"]
                 </button>
-
             </div>
         </div>
     }
@@ -106,12 +106,10 @@
         if (!int.TryParse(e.Value?.ToString(), out var v)) v = item.Quantity;
         if (v < 1) v = 1;
 
-        // ✅ now uses ProductVariantId
         CartService.UpdateQuantity(item.ProductId, item.ProductVariantId, v);
         StateHasChanged();
     }
 
     private void Remove(CartItemDto item)
-        => CartService.RemoveFromCart(item.ProductId, item.ProductVariantId);  // ✅ now uses ProductVariantId
-
+        => CartService.RemoveFromCart(item.ProductId, item.ProductVariantId);
 }

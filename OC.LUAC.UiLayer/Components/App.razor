@@ -1,7 +1,13 @@
-﻿﻿
-<!DOCTYPE html>
-<html lang="en">
+﻿@using Microsoft.AspNetCore.Localization
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
 
+@{
+    var culture = HttpContextAccessor.HttpContext?.Features
+        .Get<IRequestCultureFeature>()?.RequestCulture.Culture.TwoLetterISOLanguageName ?? "en";
+}
+
+<!DOCTYPE html>
+<html lang="@culture">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,10 +18,25 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
-
 <body>
     <Routes @rendermode="InteractiveServer" />
-    <script src="_framework/blazor.web.js"></script>
-</body>
 
+    <script>
+        (function() {
+            var culture = localStorage.getItem('culture');
+            if (culture) {
+                // set ASP.NET Core culture cookie
+                document.cookie = ".AspNetCore.Culture=c=" + culture + "|uic=" + culture + "; path=/";
+
+                // also set navigator language so Blazor picks it up
+                Object.defineProperty(navigator, "language", { value: culture, configurable: true });
+                Object.defineProperty(navigator, "languages", { value: [culture], configurable: true });
+            }
+        })();
+    </script>
+
+    <script src="_framework/blazor.server.js"></script>
+
+
+</body>
 </html>

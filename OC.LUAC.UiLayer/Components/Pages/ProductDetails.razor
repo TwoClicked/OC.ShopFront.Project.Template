@@ -37,7 +37,7 @@
             <!-- Product Info -->
             <div>
                 <h1 class="text-3xl font-bold mb-4">@product.Name_En</h1>
-                <p class="text-amber-600 text-xl mb-4">@product.Price.ToString("C")</p>
+                <p class="text-amber-600 text-xl mb-4">@product.Price.ToString("C", new System.Globalization.CultureInfo("de-DE"))</p>
                 <p class="text-gray-300 mb-6">@product.Description_En</p>
 
                 <h3 class="font-semibold mb-2">Available Sizes</h3>

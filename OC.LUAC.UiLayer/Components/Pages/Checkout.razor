@@ -83,7 +83,7 @@
                                     <div class="text-sm text-gray-400">Size: @x.Size</div>
                                     <div class="text-sm text-gray-400">Qty: @x.Quantity</div>
                                 </div>
-                                <div class="text-sm">@((x.Price * x.Quantity).ToString("C"))</div>
+                                <div class="text-sm">@((x.Price * x.Quantity).ToString("C", new System.Globalization.CultureInfo("de-DE")))</div>
                             </li>
                         }
                     </ul>
@@ -108,14 +108,14 @@
                         {
                             <div class="flex justify-between mt-2 text-green-400">
                                 <span>Discount</span>
-                                <span>-@voucherDiscount.ToString("C")</span>
+                                <span>-@voucherDiscount.ToString("C", new System.Globalization.CultureInfo("de-DE"))</span>
                             </div>
                         }
                         @if (voucherDiscount > 0 && appliesToShipping)
                         {
                             <div class="flex justify-between mt-2 text-green-400">
                                 <span>Voucher + Free shipping</span>
-                                <span>-@voucherDiscount.ToString("C")</span>
+                                <span>-@voucherDiscount.ToString("C", new System.Globalization.CultureInfo("de-DE"))</span>
                             </div>
                         }
                     </div>
@@ -134,20 +134,20 @@
                         }
                         else
                         {
-                            <span>@quote.ShippingCost.ToString("C")</span>
+                            <span>@quote.ShippingCost.ToString("C", new System.Globalization.CultureInfo("de-DE"))</span>
                         }
                     </div>
 
                     <!-- Grand total -->
                     <div class="flex justify-between font-semibold border-t border-neutral-700 pt-2">
                         <span>Total</span>
-                        <span class="text-amber-600">@GrandTotal.ToString("C")</span>
+                        <span class="text-amber-600">@GrandTotal.ToString("C", new System.Globalization.CultureInfo("de-DE"))</span>
                     </div>
 
                     @if (quote is not null && !quote.IsFree)
                     {
                         <p class="text-xs text-gray-400 mt-2">
-                            Free shipping from @quote.FreeShippingThreshold.ToString("C").
+                            Free shipping from @quote.FreeShippingThreshold.ToString("C", new System.Globalization.CultureInfo("de-DE")).
                         </p>
                     }
                 </div>

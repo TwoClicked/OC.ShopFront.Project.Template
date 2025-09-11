@@ -75,7 +75,7 @@ else
                         }
                     </td>
                     <td class="px-3 py-2">@p.Name_En</td>
-                    <td class="px-3 py-2">@p.Price.ToString("C")</td>
+                    <td class="px-3 py-2">@p.Price.("C", new System.Globalization.CultureInfo("de-DE"))</td>
                     <td class="px-3 py-2">@p.CategoryName_En</td>
                     <td class="px-3 py-2">
                         @if (p.IsFeatured)

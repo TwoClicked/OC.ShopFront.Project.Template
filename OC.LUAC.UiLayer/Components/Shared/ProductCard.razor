@@ -1,11 +1,12 @@
-﻿@using OC.LUAC.UiLayer.DTO.Products
+﻿@using System.Globalization
+@using OC.LUAC.UiLayer.DTO.Products
 @inject IConfiguration Config
 
 <div class="bg-neutral-900 rounded-xl shadow-md overflow-hidden hover:scale-105 transition-transform flex flex-col">
     <!-- Image Carousel -->
     <div class="relative w-full h-64 overflow-hidden">
         <img src="@CurrentImageUrl"
-             alt="@Product.Name_En"
+             alt="@DisplayName"
              class="absolute inset-0 w-full h-full object-cover transition duration-300" />
 
         @if (HasMultipleImages)
@@ -23,8 +24,9 @@
 
     <!-- Product Info -->
     <div class="p-4 flex flex-col flex-grow">
-        <h3 class="text-lg font-semibold text-neutral-50">@Product.Name_En</h3>
-        <p class="text-neutral-50">@Product.Price.ToString("C")</p>
+        <h3 class="text-lg font-semibold text-neutral-50">@DisplayName</h3>
+        <p class="text-neutral-400 text-sm">@DisplayDescription</p>
+        <p class="text-neutral-50 font-bold">@Product.Price.ToString("C", new System.Globalization.CultureInfo("de-DE"))</p>
 
         <div class="mt-auto">
             <a href="/product/@Product.Id?origin=@Origin"
@@ -50,6 +52,18 @@
             : !string.IsNullOrWhiteSpace(Product.ThumbnailUrl)
                 ? Config["ApiBaseUrl"]!.TrimEnd('/') + Product.ThumbnailUrl
                 : "https://placehold.co/600x800";
+
+    // ✅ Culture-aware product name
+    private string DisplayName =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de"
+            ? Product.Name_De
+            : Product.Name_En;
+
+    // ✅ Culture-aware product description
+    private string DisplayDescription =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de"
+            ? Product.Description_De
+            : Product.Description_En;
 
     private void ShowNextImage()
     {

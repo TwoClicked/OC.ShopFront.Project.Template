@@ -1,17 +1,16 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using OC.LUAC.ApiLayer;
 using OC.LUAC.ApiLayer.Hubs;
 using OC.LUAC.ServiceLayer;
 using QuestPDF.Infrastructure;
-using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// API layer DI (JWT, token service, image storage, etc.)
+// API layer DI
 builder.Services.AddApiLayerServices(builder.Configuration);
-
-// Service layer DI
 builder.Services.AddProjectServices(builder.Configuration);
 
 // QuestPDF license
@@ -30,7 +29,7 @@ builder.Services
 // SignalR
 builder.Services.AddSignalR();
 
-// Swagger (+ Bearer support)
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -57,9 +56,30 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Dev CORS (tighten for prod)
+// ✅ CORS (allow Accept-Language)
 builder.Services.AddCors(o =>
-    o.AddPolicy("dev", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+    o.AddPolicy("dev", p => p
+        .AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .WithExposedHeaders("Content-Language") // optional: allow client to see culture response
+    )
+);
+
+// ✅ Localization
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+var supportedCultures = new[] { "en", "de" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("en")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+// Use Accept-Language as culture provider
+localizationOptions.RequestCultureProviders = new List<IRequestCultureProvider>
+{
+    new AcceptLanguageHeaderRequestCultureProvider()
+};
 
 var app = builder.Build();
 
@@ -71,20 +91,36 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// ---- Static files ----
-// Default wwwroot
+// Static files
 app.UseStaticFiles();
 
-
+// ✅ Ensure CORS runs BEFORE localization
 app.UseCors("dev");
 
+// ✅ Debug raw header BEFORE localization resolves
+app.Use(async (context, next) =>
+{
+    Console.WriteLine("[API] Raw Accept-Language header: " +
+        context.Request.Headers["Accept-Language"].ToString());
+    await next();
+});
+
+// ✅ Apply localization
+app.UseRequestLocalization(localizationOptions);
+
+// ✅ Debug resolved culture
+app.Use(async (context, next) =>
+{
+    var feature = context.Features.Get<IRequestCultureFeature>();
+    Console.WriteLine($"[API] Resolved Culture: {feature?.RequestCulture.Culture}");
+    await next();
+});
+
 // Auth pipeline
-app.UseAuthentication();   // must be before UseAuthorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Map SignalR hub
 app.MapHub<ChatHub>("/chathub");
 
 app.Run();

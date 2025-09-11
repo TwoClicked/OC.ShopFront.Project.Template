@@ -124,8 +124,8 @@ else
                                 <td class="py-2">@item.ProductName</td>
                                 <td class="py-2">@item.Size</td>
                                 <td class="py-2">@item.Quantity</td>
-                                <td class="py-2">@item.UnitPrice.ToString("C")</td>
-                                <td class="py-2">@((item.Quantity * item.UnitPrice).ToString("C"))</td>
+                                <td class="py-2">@item.UnitPrice.("C", new System.Globalization.CultureInfo("de-DE"))</td>
+                                <td class="py-2">@((item.Quantity * item.UnitPrice).ToString("C", new System.Globalization.CultureInfo("de-DE")))</td>
                             </tr>
                         }
                     </tbody>
@@ -135,13 +135,13 @@ else
                 <div class="bg-neutral-900 rounded p-4 space-y-2 text-sm">
                     <p class="flex justify-between">
                         <span class="text-gray-400">Subtotal:</span>
-                        <span class="text-amber-600">@order.Subtotal.ToString("C")</span>
+                        <span class="text-amber-600">@order.Subtotal.("C", new System.Globalization.CultureInfo("de-DE"))</span>
                     </p>
                     @if (order.Discount > 0)
                     {
                         <p class="flex justify-between text-red-400">
                             <span>Discount:</span>
-                            <span>-@order.Discount.ToString("C")</span>
+                            <span>-@order.Discount.("C", new System.Globalization.CultureInfo("de-DE"))</span>
                         </p>
                     }
                     <p class="flex justify-between">
@@ -151,7 +151,7 @@ else
                     <hr class="border-neutral-700" />
                     <p class="flex justify-between font-semibold">
                         <span>Total:</span>
-                        <span class="text-amber-500">@order.TotalAfterDiscount.ToString("C")</span>
+                        <span class="text-amber-500">@order.TotalAfterDiscount.("C", new System.Globalization.CultureInfo("de-DE"))</span>
                     </p>
                 </div>
 

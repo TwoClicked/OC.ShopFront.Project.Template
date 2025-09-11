@@ -1,50 +1,58 @@
-﻿@inherits LayoutComponentBase
+﻿@using System.Globalization
+@inherits LayoutComponentBase
 @inject OC.LUAC.UiLayer.Services.CartService CartService
 @inject OC.LUAC.UiLayer.Services.AuthService AuthService
 @inject OC.LUAC.UiLayer.Services.AdminAuthService AdminAuthService
+@inject OC.LUAC.UiLayer.Services.LanguageService LanguageService
 @inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<MainLayout> T
 
 <div class="@MainWrapperClass" style="@MainWrapperStyle">
-    <!-- Navbar -->
     <header class="@HeaderClass">
         <nav class="container mx-auto flex justify-between items-center p-4 relative">
             <div class="flex items-center space-x-4">
                 <a href="/" class="flex items-center">
                     <img src="/images/WHITE_LUAC.png" alt="LUAC Logo" class="h-24 w-auto" />
                 </a>
-
                 @if (isLoggedIn && !isAdmin)
                 {
                     <span class="px-4 py-2 rounded text-amber-600 transition-colors shadow-md">
-                        Hello, @userFirstName
+                        @T["Hello"], @userFirstName
                     </span>
                 }
             </div>
 
+
+
             <ul class="flex space-x-4 items-center">
+                <li>
+                    <!-- ✅ Language switcher -->
+                    <select value="@currentCulture" @onchange="OnLanguageChanged"
+                            class="bg-neutral-900 border border-neutral-700 text-amber-600 text-sm px-3 py-1 rounded-md shadow-sm hover:border-amber-600 focus:outline-none focus:ring-1 focus:ring-amber-600 transition">
+                        <option value="en">English</option>
+                        <option value="de">Deutsch</option>
+                    </select>
+                </li>
                 <li>
                     <NavLink href="/" Match="NavLinkMatch.All"
                              class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors shadow-md"
                              activeClass="text-amber-600 font-medium">
-                        Home
+                        @T["Nav_Home"]
                     </NavLink>
                 </li>
                 <li>
                     <NavLink href="/shop" Match="NavLinkMatch.Prefix"
                              class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                              activeClass="text-amber-600 font-medium">
-                        Shop
+                        @T["Nav_Shop"]
                     </NavLink>
                 </li>
-
-                <!-- Cart -->
                 <li class="relative">
                     <NavLink href="/cart" Match="NavLinkMatch.Prefix"
                              class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                              activeClass="text-amber-600 font-semibold">
-                        Cart
+                        @T["Nav_Cart"]
                     </NavLink>
-
                     @if (CartService.Items.Any())
                     {
                         <span class="absolute -top-2 -right-2 bg-amber-600 text-xs font-bold px-2 py-1 rounded-full">
@@ -55,45 +63,40 @@
 
                 @if (isAdmin)
                 {
-                    <!-- Admin Back Office -->
                     <li>
                         <NavLink href="/admin" Match="NavLinkMatch.Prefix"
                                  class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                                  activeClass="text-amber-600 font-medium">
-                            Admin
+                            @T["Nav_Admin"]
                         </NavLink>
                     </li>
-
-                    <!-- Logout -->
                     <li>
                         <button @onclick="LogoutAdmin"
                                 class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors">
-                            Logout
+                            @T["Nav_Logout"]
                         </button>
                     </li>
                 }
                 else if (isLoggedIn)
                 {
-                    <!-- Customer Account -->
                     <li>
                         <NavLink href="/chat" Match="NavLinkMatch.Prefix"
                                  class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                                  activeClass="text-amber-600 font-medium">
-                            Live Chat
+                            @T["Nav_LiveChat"]
                         </NavLink>
                     </li>
                     <li>
                         <NavLink href="/account" Match="NavLinkMatch.Prefix"
                                  class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                                  activeClass="text-amber-600 font-medium">
-                            Account
+                            @T["Nav_Account"]
                         </NavLink>
                     </li>
-                    <!-- Logout -->
                     <li>
                         <button @onclick="LogoutCustomer"
                                 class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors">
-                            Logout
+                            @T["Nav_Logout"]
                         </button>
                     </li>
                 }
@@ -103,21 +106,18 @@
                         <NavLink href="/loginRegister" Match="NavLinkMatch.Prefix"
                                  class="px-4 py-2 rounded hover:bg-neutral-700 transition-colors"
                                  activeClass="text-amber-600 font-medium">
-                            Login / Register
+                            @T["Nav_LoginRegister"]
                         </NavLink>
                     </li>
                 }
-
             </ul>
         </nav>
     </header>
 
-    <!-- Main content -->
     <main class="flex-1 container mx-auto p-6 relative z-10">
         @Body
     </main>
 
-    <!-- Footer -->
     <footer class="@FooterClass">
         © @DateTime.Now.Year - LUAC. All rights reserved.
     </footer>
@@ -128,6 +128,7 @@
     private bool isLoggedIn;
     private bool isAdmin;
     private string? userFirstName;
+    private string currentCulture = "en";
 
     private string MainWrapperClass => "min-h-screen flex flex-col text-white relative";
     private string MainWrapperStyle =>
@@ -145,60 +146,51 @@
             ? "bg-transparent text-center p-4 text-sm text-gray-300 z-10"
             : "bg-neutral-900 text-center p-4 text-sm text-gray-400";
 
-    protected override void OnInitialized()
-    {
-        AuthService.OnAuthStateChanged += async () =>
-        {
-            await LoadUserProfile();
-            InvokeAsync(StateHasChanged);
-        };
-
-        AdminAuthService.OnAuthStateChanged += async () =>
-        {
-            await LoadUserProfile();
-            InvokeAsync(StateHasChanged);
-        };
-    }
-
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_initialized)
         {
-            await LoadUserProfile(); // <-- will now also check Admin properly
+            await LoadUserProfile();
             await CartService.InitializeAsync();
             CartService.OnChange += StateHasChanged;
+
+            await LoadCultureAsync();
+
             _initialized = true;
             StateHasChanged();
         }
     }
 
+    private async Task LoadCultureAsync()
+    {
+        var culture = await LanguageService.GetLanguageFromLocalStorageAsync()
+                      ?? await LanguageService.GetLanguageFromCookieAsync()
+                      ?? "en";
+
+        var ci = new CultureInfo(culture);
+        CultureInfo.CurrentCulture = ci;
+        CultureInfo.CurrentUICulture = ci;
+        CultureInfo.DefaultThreadCurrentCulture = ci;
+        CultureInfo.DefaultThreadCurrentUICulture = ci;
+
+        currentCulture = culture;
+    }
 
     private async Task LoadUserProfile()
     {
-        // Check Customer
         isLoggedIn = await AuthService.IsLoggedInAsync();
-
-        // Check Admin
         isAdmin = await AdminAuthService.IsLoggedInAsync();
 
         if (isLoggedIn)
         {
-            var cachedProfile = await AuthService.GetProfileAsync(refresh: false);
-            userFirstName = cachedProfile?.FirstName;
-
-            var latest = await AuthService.GetProfileAsync(refresh: true);
-            if (latest != null)
-            {
-                userFirstName = latest.FirstName;
-            }
+            var profile = await AuthService.GetProfileAsync(refresh: true);
+            userFirstName = profile?.FirstName;
         }
         else
         {
             userFirstName = null;
         }
     }
-
 
     private async Task LogoutCustomer()
     {
@@ -212,5 +204,23 @@
         await AdminAuthService.LogoutAsync();
         await LoadUserProfile();
         Nav.NavigateTo("/", forceLoad: true);
+    }
+
+    private async Task OnLanguageChanged(ChangeEventArgs e)
+    {
+        var selected = e.Value?.ToString() ?? "en";
+        if (selected == currentCulture) return;
+
+        await LanguageService.SetLanguageAsync(selected);
+
+        var ci = new CultureInfo(selected);
+        CultureInfo.CurrentCulture = ci;
+        CultureInfo.CurrentUICulture = ci;
+        CultureInfo.DefaultThreadCurrentCulture = ci;
+        CultureInfo.DefaultThreadCurrentUICulture = ci;
+
+        currentCulture = selected;
+
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
     }
 }

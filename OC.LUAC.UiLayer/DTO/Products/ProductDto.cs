@@ -12,6 +12,12 @@ namespace OC.LUAC.UiLayer.DTO.Products
         [JsonPropertyName("name_de")]
         public string Name_De { get; set; } = "";
 
+        [JsonPropertyName("description_en")]
+        public string Description_En { get; set; } = "";
+
+        [JsonPropertyName("description_de")]
+        public string Description_De { get; set; } = "";
+
         public decimal Price { get; set; }
 
         [JsonPropertyName("categoryId")]
@@ -42,6 +48,5 @@ namespace OC.LUAC.UiLayer.DTO.Products
             string.IsNullOrWhiteSpace(ThumbnailUrl)
                 ? null
                 : $"{baseUrl.TrimEnd('/')}/{ThumbnailUrl.TrimStart('/')}";
-
     }
 }

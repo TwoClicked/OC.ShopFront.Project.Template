@@ -1,36 +1,44 @@
 ﻿@page "/"
 @using OC.LUAC.UiLayer.DTO.Products
+@using System.Globalization
 @inject HttpClient Http
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Home> L
 
 <div class="bg-neutral-900 text-white">
+    <!-- Debug info: show current culture and test translations 
+    <small class="block text-gray-500 text-center mb-4">
+        Current Culture: <strong>@CultureInfo.CurrentUICulture.Name</strong><br />
+        Localizer Type: @L.GetType().FullName<br />
+        Test BrandStatement: @L["BrandStatement"]
+    </small> -->
 
     <!-- Category Highlights -->
     <section class="py-16 px-6 md:px-12">
-        <h2 class="text-3xl font-bold mb-8 text-center">Shop by Category</h2>
+        <h2 class="text-3xl font-bold mb-8 text-center">@L["ShopByCategory"]</h2>
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
 
                 <a href="/shop?categoryId=1" class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
-                    <img src="/images/category-tshirts.jpg" alt="T-Shirts"
+                    <img src="/images/category-tshirts.jpg" alt="@L["CategoryTshirts"]"
                          class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span class="text-2xl font-bold text-white">T-Shirts</span>
+                        <span class="text-2xl font-bold text-white">@L["CategoryTshirts"]</span>
                     </div>
                 </a>
 
                 <a href="/shop?categoryId=2" class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
-                    <img src="/images/category-pullovers.jpg" alt="Pullovers"
+                    <img src="/images/category-pullovers.jpg" alt="@L["CategoryPullovers"]"
                          class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span class="text-2xl font-bold text-white">Pullovers</span>
+                        <span class="text-2xl font-bold text-white">@L["CategoryPullovers"]</span>
                     </div>
                 </a>
 
                 <a href="/shop?categoryId=3" class="block relative aspect-[4/3] rounded-xl overflow-hidden group">
-                    <img src="/images/category-accessoires.jpg" alt="Accessories"
+                    <img src="/images/category-accessoires.jpg" alt="@L["CategoryAccessories"]"
                          class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span class="text-2xl font-bold text-white">Accessories</span>
+                        <span class="text-2xl font-bold text-white">@L["CategoryAccessories"]</span>
                     </div>
                 </a>
             </div>
@@ -39,15 +47,15 @@
 
     <!-- Featured Products -->
     <section class="py-16 px-6 md:px-12">
-        <h2 class="text-3xl font-bold mb-8 text-center">Featured Products</h2>
+        <h2 class="text-3xl font-bold mb-8 text-center">@L["FeaturedProducts"]</h2>
 
         @if (featuredProducts == null)
         {
-            <p class="text-center text-gray-400">Loading products...</p>
+            <p class="text-center text-gray-400">@L["LoadingProducts"]</p>
         }
         else if (!featuredProducts.Any())
         {
-            <p class="text-center text-gray-400">No featured products found.</p>
+            <p class="text-center text-gray-400">@L["NoFeaturedProducts"]</p>
         }
         else
         {
@@ -67,8 +75,7 @@
         <div class="flex flex-col items-center">
             <img src="/images/WHITE_LUAC.png" alt="LUAC Logo" class="h-24 mb-4" />
             <p class="text-gray-300 max-w-2xl text-center">
-                Minimal streetwear with a bold identity. LUAC is built on timeless pieces —
-                from everyday T-Shirts and Pullovers to unique Accessories.
+                @L["BrandStatement"]
             </p>
         </div>
     </section>

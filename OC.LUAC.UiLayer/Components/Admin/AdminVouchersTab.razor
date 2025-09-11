@@ -62,7 +62,7 @@ else
                         }
                         else if (v.FixedAmount.HasValue)
                         {
-                            <span>@v.FixedAmount.Value.ToString("C") Off</span>
+                            <span>@v.FixedAmount.Value.("C", new System.Globalization.CultureInfo("de-DE")) Off</span>
                         }
                         else
                         {
