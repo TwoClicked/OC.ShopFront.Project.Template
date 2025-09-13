@@ -117,16 +117,106 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="AddressLine1" xml:space="preserve">
+    <value>Adresszeile 1</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="AddressLine2" xml:space="preserve">
+    <value>Adresszeile 2</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="Apply" xml:space="preserve">
+    <value>Anwenden</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="BackToShop" xml:space="preserve">
+    <value>Zurück zum Shop</value>
+  </data>
+  <data name="BillingAddress" xml:space="preserve">
+    <value>Rechnungsadresse</value>
+  </data>
+  <data name="BillingSameAsShipping" xml:space="preserve">
+    <value>Rechnungsadresse entspricht Lieferadresse</value>
+  </data>
+  <data name="CartEmpty" xml:space="preserve">
+    <value>Ihr Warenkorb ist leer.</value>
+  </data>
+  <data name="City" xml:space="preserve">
+    <value>Stadt</value>
+  </data>
+  <data name="Country" xml:space="preserve">
+    <value>Land</value>
+  </data>
+  <data name="Discount" xml:space="preserve">
+    <value>Rabatt</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>E-Mail</value>
+  </data>
+  <data name="EnterVoucherError" xml:space="preserve">
+    <value>Bitte geben Sie einen Gutscheincode ein.</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>Vorname</value>
+  </data>
+  <data name="Free" xml:space="preserve">
+    <value>Kostenlos</value>
+  </data>
+  <data name="FreeShippingThreshold" xml:space="preserve">
+    <value>Kostenloser Versand ab {0}.</value>
+  </data>
+  <data name="InvalidVoucher" xml:space="preserve">
+    <value>Ungültiger Gutscheincode.</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Nachname</value>
+  </data>
+  <data name="Optional" xml:space="preserve">
+    <value>optional</value>
+  </data>
+  <data name="OrderSummary" xml:space="preserve">
+    <value>Bestellübersicht</value>
+  </data>
+  <data name="OutOfStockError" xml:space="preserve">
+    <value>'{0}' ist nicht vorrätig oder überschreitet die verfügbare Menge.</value>
+  </data>
+  <data name="PlaceOrder" xml:space="preserve">
+    <value>Bestellung aufgeben</value>
+  </data>
+  <data name="PlaceOrderError" xml:space="preserve">
+    <value>Bestellung konnte nicht aufgegeben werden. Bitte versuchen Sie es erneut und füllen Sie alle Pflichtfelder aus!</value>
+  </data>
+  <data name="PlacingOrder" xml:space="preserve">
+    <value>Bestellung wird aufgegeben...</value>
+  </data>
+  <data name="PostalCode" xml:space="preserve">
+    <value>Postleitzahl</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Menge</value>
+  </data>
+  <data name="SelectCountry" xml:space="preserve">
+    <value>Land auswählen</value>
+  </data>
+  <data name="SelectCountryError" xml:space="preserve">
+    <value>Bitte wählen Sie ein gültiges Land.</value>
+  </data>
+  <data name="Shipping" xml:space="preserve">
+    <value>Versand</value>
+  </data>
+  <data name="ShippingAddress" xml:space="preserve">
+    <value>Lieferadresse</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Größe</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Kasse</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>Gesamt</value>
+  </data>
+  <data name="VoucherAndFreeShipping" xml:space="preserve">
+    <value>Gutschein + Kostenloser Versand</value>
+  </data>
+  <data name="VoucherCode" xml:space="preserve">
+    <value>Gutscheincode</value>
   </data>
 </root>

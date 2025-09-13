@@ -117,16 +117,106 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="AddressLine1" xml:space="preserve">
+    <value>Address line 1</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="AddressLine2" xml:space="preserve">
+    <value>Address line 2</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="BackToShop" xml:space="preserve">
+    <value>Back to shop</value>
+  </data>
+  <data name="BillingAddress" xml:space="preserve">
+    <value>Billing Address</value>
+  </data>
+  <data name="BillingSameAsShipping" xml:space="preserve">
+    <value>Billing address is the same as shipping</value>
+  </data>
+  <data name="CartEmpty" xml:space="preserve">
+    <value>Your cart is empty.</value>
+  </data>
+  <data name="City" xml:space="preserve">
+    <value>City</value>
+  </data>
+  <data name="Country" xml:space="preserve">
+    <value>Country</value>
+  </data>
+  <data name="Discount" xml:space="preserve">
+    <value>Discount</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="EnterVoucherError" xml:space="preserve">
+    <value>Please enter a voucher code.</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>First name</value>
+  </data>
+  <data name="Free" xml:space="preserve">
+    <value>Free</value>
+  </data>
+  <data name="FreeShippingThreshold" xml:space="preserve">
+    <value>Free shipping from {0}.</value>
+  </data>
+  <data name="InvalidVoucher" xml:space="preserve">
+    <value>Invalid voucher code.</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Last name</value>
+  </data>
+  <data name="Optional" xml:space="preserve">
+    <value>optional</value>
+  </data>
+  <data name="OrderSummary" xml:space="preserve">
+    <value>Order Summary</value>
+  </data>
+  <data name="OutOfStockError" xml:space="preserve">
+    <value>'{0}' is out of stock or exceeds available quantity.</value>
+  </data>
+  <data name="PlaceOrder" xml:space="preserve">
+    <value>Place Order</value>
+  </data>
+  <data name="PlaceOrderError" xml:space="preserve">
+    <value>Could not place order. Please try again, make sure all required fields are filled!</value>
+  </data>
+  <data name="PlacingOrder" xml:space="preserve">
+    <value>Placing Order...</value>
+  </data>
+  <data name="PostalCode" xml:space="preserve">
+    <value>Postal code</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="SelectCountry" xml:space="preserve">
+    <value>Select Country</value>
+  </data>
+  <data name="SelectCountryError" xml:space="preserve">
+    <value>Please select a valid country.</value>
+  </data>
+  <data name="Shipping" xml:space="preserve">
+    <value>Shipping</value>
+  </data>
+  <data name="ShippingAddress" xml:space="preserve">
+    <value>Shipping Address</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Checkout</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="VoucherAndFreeShipping" xml:space="preserve">
+    <value>Voucher + Free shipping</value>
+  </data>
+  <data name="VoucherCode" xml:space="preserve">
+    <value>Voucher Code</value>
   </data>
 </root>

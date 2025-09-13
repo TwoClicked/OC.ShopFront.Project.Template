@@ -49,7 +49,7 @@
                             <td class="py-4 text-center">@item.Size</td>
 
                             <!-- Price -->
-                            <td class="py-4 text-center">@item.Price.ToString("C")</td>
+                            <td class="py-4 text-center">@item.Price.ToString("C", new System.Globalization.CultureInfo("de-DE"))</td>
 
                             <!-- Quantity -->
                             <td class="py-4 text-center">
@@ -62,7 +62,7 @@
                             </td>
 
                             <!-- Subtotal -->
-                            <td class="py-4 text-center">@((item.Price * item.Quantity).ToString("C"))</td>
+                            <td class="py-4 text-center">@((item.Price * item.Quantity).ToString("C", new System.Globalization.CultureInfo("de-DE")))</td>
 
                             <!-- Remove -->
                             <td class="py-4 text-center">
@@ -80,7 +80,7 @@
             <div class="mt-6 text-right">
                 <p class="text-xl">
                     @L["Total"]:
-                    <span class="text-amber-600">@CartService.GetTotal().ToString("C")</span>
+                    <span class="text-amber-600">@CartService.GetTotal().ToString("C", new System.Globalization.CultureInfo("de-DE"))</span>
                 </p>
                 <button class="mt-4 px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700"
                         @onclick="@(() => Nav.NavigateTo("/checkout"))">

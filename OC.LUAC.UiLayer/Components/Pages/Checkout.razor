@@ -1,24 +1,24 @@
 ﻿@page "/checkout"
 @using System.ComponentModel.DataAnnotations
-@using System.Text.Json
 @using OC.LUAC.ObjectLayer.Orders
 @using OC.LUAC.UiLayer.Services
 @using OC.LUAC.UiLayer.DTO.Checkout
-@using OC.LUAC.ApiLayer.DTO.Shipping  
+@using OC.LUAC.ApiLayer.DTO.Shipping
 @inject CartService Cart
 @inject OrderService Orders
 @inject ShippingService Shipping
 @inject NavigationManager Nav
 @inject HttpClient Http
+@inject Microsoft.Extensions.Localization.IStringLocalizer<OC.LUAC.UiLayer.Components.Pages.Checkout> L
 
 <section class="py-16 px-6 md:px-12 text-white">
-    <h2 class="text-3xl font-bold mb-10 text-center">Checkout</h2>
+    <h2 class="text-3xl font-bold mb-10 text-center">@L["Title"]</h2>
 
     @if (!Cart.Items.Any())
     {
-        <p class="text-center text-gray-400">Your cart is empty.</p>
+        <p class="text-center text-gray-400">@L["CartEmpty"]</p>
         <div class="text-center mt-6">
-            <a href="/shop" class="px-5 py-3 bg-amber-600 rounded hover:bg-amber-700">Back to shop</a>
+            <a href="/shop" class="px-5 py-3 bg-amber-600 rounded hover:bg-amber-700">@L["BackToShop"]</a>
         </div>
     }
     else
@@ -32,21 +32,21 @@
 
                     <!-- Shipping -->
                     <div class="bg-neutral-800 rounded-xl p-6">
-                        <h3 class="text-xl font-semibold mb-4">Shipping Address</h3>
+                        <h3 class="text-xl font-semibold mb-4">@L["ShippingAddress"]</h3>
                         @AddressForm(vm.Shipping, "shipping")
                     </div>
 
                     <!-- Billing same as shipping -->
                     <div class="flex items-center gap-2">
                         <input type="checkbox" class="accent-amber-600" @bind="vm.BillingSameAsShipping" />
-                        <label>Billing address is the same as shipping</label>
+                        <label>@L["BillingSameAsShipping"]</label>
                     </div>
 
                     <!-- Billing -->
                     @if (!vm.BillingSameAsShipping)
                     {
                         <div class="bg-neutral-800 rounded-xl p-6">
-                            <h3 class="text-xl font-semibold mb-4">Billing Address</h3>
+                            <h3 class="text-xl font-semibold mb-4">@L["BillingAddress"]</h3>
                             @AddressForm(vm.Billing, "billing")
                         </div>
                     }
@@ -55,7 +55,7 @@
                     <button type="submit"
                             class="px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700"
                             disabled="@isSubmitting">
-                        @(isSubmitting ? "Placing Order..." : "Place Order")
+                        @(isSubmitting? L["PlacingOrder"] : L["PlaceOrder"])
                     </button>
 
                     @if (!string.IsNullOrEmpty(error))
@@ -68,7 +68,7 @@
             <!-- Right: Order Summary -->
             <div>
                 <div class="bg-neutral-800 rounded-xl p-6">
-                    <h3 class="text-xl font-semibold mb-4">Order Summary</h3>
+                    <h3 class="text-xl font-semibold mb-4">@L["OrderSummary"]</h3>
 
                     <ul class="divide-y divide-neutral-700">
                         @foreach (var x in Cart.Items)
@@ -80,8 +80,8 @@
                                 }
                                 <div class="flex-1">
                                     <div class="font-medium">@x.ProductName</div>
-                                    <div class="text-sm text-gray-400">Size: @x.Size</div>
-                                    <div class="text-sm text-gray-400">Qty: @x.Quantity</div>
+                                    <div class="text-sm text-gray-400">@L["Size"]: @x.Size</div>
+                                    <div class="text-sm text-gray-400">@L["Quantity"]: @x.Quantity</div>
                                 </div>
                                 <div class="text-sm">@((x.Price * x.Quantity).ToString("C", new System.Globalization.CultureInfo("de-DE")))</div>
                             </li>
@@ -90,14 +90,14 @@
 
                     <!-- Voucher input -->
                     <div class="mt-4 border-t border-neutral-700 pt-4">
-                        <label class="block mb-1">Voucher Code</label>
+                        <label class="block mb-1">@L["VoucherCode"]</label>
                         <div class="flex gap-2">
                             <InputText @bind-Value="voucherCode"
                                        class="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-l p-2" />
                             <button type="button"
                                     class="px-4 py-2 bg-neutral-700 rounded-r hover:bg-amber-700 whitespace-nowrap"
                                     @onclick="ApplyVoucher">
-                                Apply
+                                @L["Apply"]
                             </button>
                         </div>
                         @if (!string.IsNullOrEmpty(voucherError))
@@ -107,14 +107,14 @@
                         @if (voucherDiscount > 0 && !appliesToShipping)
                         {
                             <div class="flex justify-between mt-2 text-green-400">
-                                <span>Discount</span>
+                                <span>@L["Discount"]</span>
                                 <span>-@voucherDiscount.ToString("C", new System.Globalization.CultureInfo("de-DE"))</span>
                             </div>
                         }
                         @if (voucherDiscount > 0 && appliesToShipping)
                         {
                             <div class="flex justify-between mt-2 text-green-400">
-                                <span>Voucher + Free shipping</span>
+                                <span>@L["VoucherAndFreeShipping"]</span>
                                 <span>-@voucherDiscount.ToString("C", new System.Globalization.CultureInfo("de-DE"))</span>
                             </div>
                         }
@@ -122,7 +122,7 @@
 
                     <!-- Shipping line -->
                     <div class="border-t border-neutral-700 mt-4 pt-4 flex justify-between">
-                        <span class="font-semibold">Shipping</span>
+                        <span class="font-semibold">@L["Shipping"]</span>
 
                         @if (quote is null)
                         {
@@ -130,7 +130,7 @@
                         }
                         else if (quote.IsFree || appliesToShipping)
                         {
-                            <span class="text-amber-500">Free</span>
+                            <span class="text-amber-500">@L["Free"]</span>
                         }
                         else
                         {
@@ -140,14 +140,14 @@
 
                     <!-- Grand total -->
                     <div class="flex justify-between font-semibold border-t border-neutral-700 pt-2">
-                        <span>Total</span>
+                        <span>@L["Total"]</span>
                         <span class="text-amber-600">@GrandTotal.ToString("C", new System.Globalization.CultureInfo("de-DE"))</span>
                     </div>
 
                     @if (quote is not null && !quote.IsFree)
                     {
                         <p class="text-xs text-gray-400 mt-2">
-                            Free shipping from @quote.FreeShippingThreshold.ToString("C", new System.Globalization.CultureInfo("de-DE")).
+                            @L["FreeShippingThreshold", quote.FreeShippingThreshold.ToString("C", new System.Globalization.CultureInfo("de-DE"))]
                         </p>
                     }
                 </div>
@@ -172,7 +172,6 @@
 
     private List<CountryDto> Countries = new();
 
-    // backing field + property to auto-trigger UpdateQuote()
     private string _selectedCountry = "";
     private string SelectedCountry
     {
@@ -181,7 +180,7 @@
         {
             _selectedCountry = value;
             vm.Shipping.Country = value;
-            _ = UpdateQuote(); // fire & forget
+            _ = UpdateQuote();
         }
     }
 
@@ -202,26 +201,25 @@
 
     private async Task Submit()
     {
-        if (isSubmitting) return; // prevent double submission
+        if (isSubmitting) return;
 
         error = null;
 
-        // Check validation *before* locking the button
         var oos = Cart.Items.FirstOrDefault(i => i.MaxStock <= 0 || i.Quantity > i.MaxStock);
         if (oos is not null)
         {
-            error = $"'{oos.ProductName}' is out of stock or exceeds available quantity.";
+            error = L["OutOfStockError", oos.ProductName];
             return;
         }
 
         await UpdateQuote();
         if (quote is null)
         {
-            error = "Please select a valid country.";
+            error = L["SelectCountryError"];
             return;
         }
 
-        isSubmitting = true; //  lock button only now
+        isSubmitting = true;
 
         try
         {
@@ -246,17 +244,14 @@
         }
         catch (Exception ex)
         {
-            error = "Could not place order. Please try again, make sure all fields marked with * are filled!";
+            error = L["PlaceOrderError"];
             Console.WriteLine("❌ " + ex.Message);
         }
         finally
         {
-            // always reset if failed
             isSubmitting = false;
         }
     }
-
-
 
     private async Task UpdateQuote()
     {
@@ -270,7 +265,6 @@
 
             quote = await Shipping.GetQuoteAsync(vm.Shipping.Country, CartSubtotal);
 
-            // If shipping voucher was applied, reapply discount
             if (appliesToShipping)
             {
                 await ApplyVoucher();
@@ -293,7 +287,7 @@
 
         if (string.IsNullOrWhiteSpace(voucherCode))
         {
-            voucherError = "Please enter a voucher code.";
+            voucherError = L["EnterVoucherError"];
             return;
         }
 
@@ -302,19 +296,16 @@
             var voucher = await Http.GetFromJsonAsync<VoucherResult>($"/api/vouchers/validate/{voucherCode}");
             if (voucher == null)
             {
-                voucherError = "Invalid voucher.";
+                voucherError = L["InvalidVoucher"];
                 return;
             }
 
-            // percentage discount
             if (voucher.Percentage.HasValue)
                 voucherDiscount += CartSubtotal * (voucher.Percentage.Value / 100m);
 
-            // fixed amount discount
             if (voucher.FixedAmount.HasValue)
                 voucherDiscount += voucher.FixedAmount.Value;
 
-            // applies to shipping
             if (voucher.AppliesToShipping && quote is not null && !quote.IsFree)
             {
                 appliesToShipping = true;
@@ -323,10 +314,9 @@
         }
         catch
         {
-            voucherError = "Invalid voucher code.";
+            voucherError = L["InvalidVoucher"];
         }
     }
-
 
     private class VoucherResult
     {
@@ -344,64 +334,64 @@
     }
 
     private RenderFragment AddressForm(AddressDto model, string idPrefix) => @<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-            <label class="block mb-1">First name*</label>
-            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
-                       @bind-Value="model.FirstName" id="@($"{idPrefix}-first")" />
-            <ValidationMessage For="@(() => model.FirstName)" />
-        </div>
-        <div>
-            <label class="block mb-1">Last name*</label>
-            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
-                       @bind-Value="model.LastName" id="@($"{idPrefix}-last")" />
-            <ValidationMessage For="@(() => model.LastName)" />
-        </div>
+    <div>
+        <label class="block mb-1">@L["FirstName"]*</label>
+        <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                   @bind-Value="model.FirstName" id="@($"{idPrefix}-first")" />
+        <ValidationMessage For="@(() => model.FirstName)" />
+    </div>
+    <div>
+        <label class="block mb-1">@L["LastName"]*</label>
+        <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                   @bind-Value="model.LastName" id="@($"{idPrefix}-last")" />
+        <ValidationMessage For="@(() => model.LastName)" />
+    </div>
 
-        <div class="md:col-span-2">
-            <label class="block mb-1">Email*</label>
-            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
-                       @bind-Value="model.Email" id="@($"{idPrefix}-email")" />
-            <ValidationMessage For="@(() => model.Email)" />
-        </div>
+    <div class="md:col-span-2">
+        <label class="block mb-1">@L["Email"]*</label>
+        <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                   @bind-Value="model.Email" id="@($"{idPrefix}-email")" />
+        <ValidationMessage For="@(() => model.Email)" />
+    </div>
 
-        <div class="md:col-span-2">
-            <label class="block mb-1">Address line 1*</label>
-            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
-                       @bind-Value="model.Line1" id="@($"{idPrefix}-line1")" />
-            <ValidationMessage For="@(() => model.Line1)" />
-        </div>
+    <div class="md:col-span-2">
+        <label class="block mb-1">@L["AddressLine1"]*</label>
+        <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                   @bind-Value="model.Line1" id="@($"{idPrefix}-line1")" />
+        <ValidationMessage For="@(() => model.Line1)" />
+    </div>
 
-        <div class="md:col-span-2">
-            <label class="block mb-1">Address line 2 (optional)</label>
-            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
-                       @bind-Value="model.Line2" id="@($"{idPrefix}-line2")" />
-        </div>
+    <div class="md:col-span-2">
+        <label class="block mb-1">@L["AddressLine2"] (@L["Optional"])</label>
+        <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                   @bind-Value="model.Line2" id="@($"{idPrefix}-line2")" />
+    </div>
 
-        <div>
-            <label class="block mb-1">City*</label>
-            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
-                       @bind-Value="model.City" id="@($"{idPrefix}-city")" />
-            <ValidationMessage For="@(() => model.City)" />
-        </div>
-        <div>
-            <label class="block mb-1">Postal code*</label>
-            <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
-                       @bind-Value="model.PostalCode" id="@($"{idPrefix}-postal")" />
-            <ValidationMessage For="@(() => model.PostalCode)" />
-        </div>
+    <div>
+        <label class="block mb-1">@L["City"]*</label>
+        <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                   @bind-Value="model.City" id="@($"{idPrefix}-city")" />
+        <ValidationMessage For="@(() => model.City)" />
+    </div>
+    <div>
+        <label class="block mb-1">@L["PostalCode"]*</label>
+        <InputText class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                   @bind-Value="model.PostalCode" id="@($"{idPrefix}-postal")" />
+        <ValidationMessage For="@(() => model.PostalCode)" />
+    </div>
 
-        <!-- ✅ Dropdown for country -->
-        <div class="md:col-span-2">
-            <label class="block mb-1">Country*</label>
-            <InputSelect class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
-                         @bind-Value="SelectedCountry">
-                <option value="">-- Select Country --</option>
-                @foreach (var c in Countries)
-            {
-                <option value="@c.Code">@c.Name</option>
-            }
-            </InputSelect>
-            <ValidationMessage For="@(() => model.Country)" />
-        </div>
-    </div>;
+    <!-- ✅ Dropdown for country -->
+    <div class="md:col-span-2">
+        <label class="block mb-1">@L["Country"]*</label>
+        <InputSelect class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
+                     @bind-Value="SelectedCountry">
+            <option value="">-- @L["SelectCountry"] --</option>
+            @foreach (var c in Countries)
+                        {
+            <option value="@c.Code">@c.Name</option>
+                        }
+        </InputSelect>
+        <ValidationMessage For="@(() => model.Country)" />
+    </div>
+</div>;
 }
