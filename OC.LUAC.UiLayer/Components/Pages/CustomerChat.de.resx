@@ -117,31 +117,40 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
-  </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
-  </data>
-  <data name="Nav_Admin" xml:space="preserve">
+  <data name="Admin" xml:space="preserve">
     <value>Admin</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="AdminWillJoinSoon" xml:space="preserve">
+    <value>Ein Admin wird in Kürze bei dir sein.</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
-  </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
+  <data name="LiveChat" xml:space="preserve">
     <value>Live-Chat</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="LoadHistoryError" xml:space="preserve">
+    <value>Fehler beim Laden des Verlaufs: {0}</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="MustBeLoggedIn" xml:space="preserve">
+    <value>Du musst eingeloggt sein, um den Chat zu starten.</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="Send" xml:space="preserve">
+    <value>Senden</value>
+  </data>
+  <data name="SessionClosed" xml:space="preserve">
+    <value>Die Chat-Sitzung wurde geschlossen.</value>
+  </data>
+  <data name="SessionClosedByAdmin" xml:space="preserve">
+    <value>Diese Chat-Sitzung wurde von einem Admin geschlossen.</value>
+  </data>
+  <data name="StartChat" xml:space="preserve">
+    <value>Chat starten</value>
+  </data>
+  <data name="TypeMessage" xml:space="preserve">
+    <value>Nachricht eingeben...</value>
+  </data>
+  <data name="WelcomeMessage" xml:space="preserve">
+    <value>Vielen Dank, dass du uns kontaktiert hast. Ein Admin wird deine Nachricht prüfen und sich innerhalb von 24 Stunden bei dir melden. Bitte beschreibe dein Anliegen so detailliert wie möglich, damit wir dir effektiv helfen können.</value>
+  </data>
+  <data name="You" xml:space="preserve">
+    <value>Du</value>
   </data>
 </root>

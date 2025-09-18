@@ -117,31 +117,85 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="Actions" xml:space="preserve">
+    <value>Aktionen</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Storniert</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="ChangePassword" xml:space="preserve">
+    <value>Passwort ändern</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Passwort bestätigen</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="DangerZone" xml:space="preserve">
+    <value>Gefahrenzone</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="DangerZoneWarning" xml:space="preserve">
+    <value>⚠️ Das Löschen deines Kontos ist dauerhaft. Alle deine Daten gehen verloren.</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="Date" xml:space="preserve">
+    <value>Datum</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="DeleteAccount" xml:space="preserve">
+    <value>Konto löschen</value>
+  </data>
+  <data name="DeletePlaceholder" xml:space="preserve">
+    <value>Tippe "delete" zur Bestätigung</value>
+  </data>
+  <data name="EmailReadonly" xml:space="preserve">
+    <value>E-Mail (schreibgeschützt)</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>Englisch</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>Vorname</value>
+  </data>
+  <data name="German" xml:space="preserve">
+    <value>Deutsch</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Sprache</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Nachname</value>
+  </data>
+  <data name="LoadingOrders" xml:space="preserve">
+    <value>Bestellungen werden geladen...</value>
+  </data>
+  <data name="LoadingProfile" xml:space="preserve">
+    <value>Profil wird geladen...</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Neues Passwort</value>
+  </data>
+  <data name="NoOrders" xml:space="preserve">
+    <value>Keine Bestellungen gefunden.</value>
+  </data>
+  <data name="OldPassword" xml:space="preserve">
+    <value>Altes Passwort</value>
+  </data>
+  <data name="OrderNumber" xml:space="preserve">
+    <value>Bestellnr.</value>
+  </data>
+  <data name="Orders" xml:space="preserve">
+    <value>Bestellungen</value>
+  </data>
+  <data name="Profile" xml:space="preserve">
+    <value>Profil</value>
+  </data>
+  <data name="SaveChanges" xml:space="preserve">
+    <value>Änderungen speichern</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>Gesamt</value>
   </data>
 </root>

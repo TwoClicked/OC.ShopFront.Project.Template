@@ -1,14 +1,15 @@
 ﻿@page "/chat"
 @inject ChatClientService ChatClient
 @inject AuthService Auth
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CustomerChat> L
 
-<h2 class="text-2xl font-bold mb-4 text-amber-600">Live Chat</h2>
+<h2 class="text-2xl font-bold mb-4 text-amber-600">@L["LiveChat"]</h2>
 
 @if (!started)
 {
     <button @onclick="StartSession"
             class="bg-amber-600 text-white px-4 py-2 rounded">
-        Start Chat
+        @L["StartChat"]
     </button>
 }
 else
@@ -22,7 +23,7 @@ else
                                                                                                            <strong>
                     @(msg.IsSystem
                                 ? "[System]"
-                                : msg.IsFromCustomer ? "You" : "Admin"):
+                                : msg.IsFromCustomer ? L["You"] : L["Admin"]):
         </strong> @msg.Text
     </div>
         }
@@ -34,18 +35,18 @@ else
             <input type="text"
                    @bind="currentMessage"
                    @bind:event="oninput"
-                   placeholder="Type a message..."
+                   placeholder="@L["TypeMessage"]"
                    class="flex-grow bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
                    @onkeydown="HandleKeyPress" />
             <button @onclick="SendMessage"
                     class="bg-amber-600 text-white px-4 py-2 rounded">
-                Send
+                @L["Send"]
             </button>
         </div>
     }
     else
     {
-        <div class="text-red-400 font-semibold">⚠️ This chat session has been closed by an admin.</div>
+        <div class="text-red-400 font-semibold">⚠️ @L["SessionClosedByAdmin"]</div>
     }
 }
 
@@ -69,7 +70,7 @@ else
             {
                 messages.Add(new ChatVm
                 {
-                    Text = "⚠️ You must be logged in to start chat.",
+                    Text = $"⚠️ {L["MustBeLoggedIn"]}",
                     IsSystem = true
                 });
                 StateHasChanged();
@@ -100,7 +101,7 @@ else
                         sessionClosed = true;
                         messages.Add(new ChatVm
                         {
-                            Text = "⚠️ Chat session has been closed.",
+                            Text = $"⚠️ {L["SessionClosed"]}",
                             IsSystem = true
                         });
                         StateHasChanged();
@@ -118,7 +119,7 @@ else
                 // Add system message when session starts
                 messages.Add(new ChatVm
                 {
-                    Text = "💬 Thank you for reaching out. An admin will review your message and get back to you within 24 hours. Please explain your issue in as much detail as possible so we can assist you effectively.",
+                    Text = $"💬 {L["WelcomeMessage"]}",
                     IsSystem = true
                 });
 
@@ -139,7 +140,7 @@ else
             {
                 messages.Add(new ChatVm
                 {
-                    Text = $"⚠️ Failed to load history: {ex.Message}",
+                    Text = $"⚠️ {L["LoadHistoryError", ex.Message]}",
                     IsSystem = true
                 });
             }
@@ -160,7 +161,7 @@ else
         // Add system message right when chat starts
         messages.Add(new ChatVm
         {
-            Text = "💬 An admin will be with you shortly.",
+            Text = $"💬 {L["AdminWillJoinSoon"]}",
             IsSystem = true
         });
 

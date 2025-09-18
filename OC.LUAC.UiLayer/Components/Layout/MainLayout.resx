@@ -117,14 +117,29 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Hello" xml:space="preserve">
+    <value>Hello</value>
+  </data>
+  <data name="Nav_Account" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="Nav_Admin" xml:space="preserve">
+    <value>Admin</value>
+  </data>
   <data name="Nav_Cart" xml:space="preserve">
     <value>Cart</value>
   </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Home</value>
   </data>
+  <data name="Nav_LiveChat" xml:space="preserve">
+    <value>Live Chat</value>
+  </data>
   <data name="Nav_LoginRegister" xml:space="preserve">
     <value>Login / Register</value>
+  </data>
+  <data name="Nav_Logout" xml:space="preserve">
+    <value>Logout</value>
   </data>
   <data name="Nav_Shop" xml:space="preserve">
     <value>Shop</value>

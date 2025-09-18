@@ -117,31 +117,49 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="AddCountryButton" xml:space="preserve">
+    <value>+ Hinzufügen</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="AddZone" xml:space="preserve">
+    <value>Versandzone hinzufügen</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="BaseCost" xml:space="preserve">
+    <value>Grundgebühr (€)</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="CountriesLabel" xml:space="preserve">
+    <value>Länder</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="CountryCodePlaceholder" xml:space="preserve">
+    <value>Kürzel (z.B. DE)</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="CountryConflict" xml:space="preserve">
+    <value>⚠️ Land {0} ist bereits der Zone '{1}' zugeordnet.</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="CountryNamePlaceholder" xml:space="preserve">
+    <value>Name (z.B. Deutschland)</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="DefaultZone" xml:space="preserve">
+    <value>Standardzone</value>
+  </data>
+  <data name="EditZone" xml:space="preserve">
+    <value>Versandzone bearbeiten</value>
+  </data>
+  <data name="FreeShippingThreshold" xml:space="preserve">
+    <value>Schwelle für kostenlosen Versand (€)</value>
+  </data>
+  <data name="LoadError" xml:space="preserve">
+    <value>⚠️ Daten konnten nicht geladen werden:</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="SaveError" xml:space="preserve">
+    <value>⚠️ Zone konnte nicht gespeichert werden:</value>
+  </data>
+  <data name="ZoneName" xml:space="preserve">
+    <value>Zonenname</value>
   </data>
 </root>

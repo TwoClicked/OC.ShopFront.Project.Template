@@ -117,31 +117,34 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="AddedToCart" xml:space="preserve">
+    <value>Zum Warenkorb hinzugefügt.</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="AddFail" xml:space="preserve">
+    <value>Konnte nicht hinzugefügt werden (Menge würde den Lagerbestand überschreiten).</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="AddToCart" xml:space="preserve">
+    <value>Zum Warenkorb hinzugefügt.</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="AvailableSizes" xml:space="preserve">
+    <value>Verfügbare Größen</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="Back" xml:space="preserve">
+    <value>Zurück</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="InStock" xml:space="preserve">
+    <value>Auf Lager</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="LoadingProduct" xml:space="preserve">
+    <value>Produkte werden geladen...</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="OnlyNLeft" xml:space="preserve">
+    <value>Nur noch {0} auf Lager.</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="OutOfStock" xml:space="preserve">
+    <value>Ausverkauft</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Menge</value>
   </data>
 </root>

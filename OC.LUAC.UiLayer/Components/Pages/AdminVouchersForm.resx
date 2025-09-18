@@ -117,31 +117,46 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="AddVoucher" xml:space="preserve">
+    <value>Add Voucher</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="CurrentUsageLabel" xml:space="preserve">
+    <value>Current Usage (Read Only)</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="EditVoucher" xml:space="preserve">
+    <value>Edit Voucher</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="EndDateLabel" xml:space="preserve">
+    <value>End Date</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="FlatRateDiscountLabel" xml:space="preserve">
+    <value>Flat Rate Discount</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="FreeShippingLabel" xml:space="preserve">
+    <value>Free Shipping</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="LoadError" xml:space="preserve">
+    <value>Failed to load voucher.</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="MaxUsageCountLabel" xml:space="preserve">
+    <value>Max Usage Count</value>
+  </data>
+  <data name="PercentageDiscountLabel" xml:space="preserve">
+    <value>Percentage Discount</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SaveError" xml:space="preserve">
+    <value>Failed to save voucher</value>
+  </data>
+  <data name="StartDateLabel" xml:space="preserve">
+    <value>Start Date</value>
+  </data>
+  <data name="VoucherCodeLabel" xml:space="preserve">
+    <value>Voucher Code</value>
   </data>
 </root>

@@ -4,75 +4,67 @@
 @inject AdminAuthService AdminAuth
 @inject NavigationManager Nav
 @inject IConfiguration Config
+@inject Microsoft.Extensions.Localization.IStringLocalizer<EditProduct> L
 
-<h2 class="text-2xl font-bold mb-6 text-amber-600">Edit Product</h2>
-
+<h2 class="text-2xl font-bold mb-6 text-amber-600">@L["Title"]</h2>
 @if (isLoading)
 {
-    <p class="text-gray-400">Loading product...</p>
+    <p class="text-gray-400">@L["LoadingProduct"]</p>
 }
 else if (product == null)
 {
-    <p class="text-red-500">Product not found.</p>
+    <p class="text-red-500">@L["ProductNotFound"]</p>
 }
 else
 {
     <AutoForm Model="product" OnValidSubmit="HandleSave">
         <DataAnnotationsValidator />
         <ValidationSummary />
-
         <!-- Product Fields -->
         <div class="grid grid-cols-2 gap-6">
             <div>
-                <label class="block text-gray-300">Name (EN)</label>
+                <label class="block text-gray-300">@L["NameEn"]</label>
                 <InputText @bind-Value="product.Name_En" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
             </div>
-
             <div>
-                <label class="block text-gray-300">Name (DE)</label>
+                <label class="block text-gray-300">@L["NameDe"]</label>
                 <InputText @bind-Value="product.Name_De" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
             </div>
-
             <div>
-                <label class="block text-gray-300">Description (EN)</label>
+                <label class="block text-gray-300">@L["DescriptionEn"]</label>
                 <InputTextArea @bind-Value="product.Description_En" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
             </div>
-
             <div>
-                <label class="block text-gray-300">Description (DE)</label>
+                <label class="block text-gray-300">@L["DescriptionDe"]</label>
                 <InputTextArea @bind-Value="product.Description_De" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
             </div>
-
             <div>
-                <label class="block text-gray-300">Price</label>
+                <label class="block text-gray-300">@L["Price"]</label>
                 <InputNumber @bind-Value="product.Price" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white" />
             </div>
-
             <div>
-                <label class="block text-gray-300">Category</label>
+                <label class="block text-gray-300">@L["Category"]</label>
                 <InputSelect @bind-Value="product.CategoryId" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white">
-                    <option value="1">T-Shirts</option>
-                    <option value="2">Pullovers</option>
-                    <option value="3">Accessories</option>
+                    <option value="1">@L["TShirts"]</option>
+                    <option value="2">@L["Pullovers"]</option>
+                    <option value="3">@L["Accessories"]</option>
                 </InputSelect>
             </div>
-
             <div class="col-span-2">
                 <label class="inline-flex items-center space-x-2">
                     <InputCheckbox @bind-Value="product.IsFeatured" />
-                    <span class="text-gray-300">Featured Product</span>
+                    <span class="text-gray-300">@L["FeaturedProductLabel"]</span>
                 </label>
             </div>
         </div>
-
         <!-- Variants & Stock -->
         <div class="mt-8">
-            <h3 class="text-lg font-semibold text-amber-600 mb-2">Variants & Stock</h3>
+            <h3 class="text-lg font-semibold text-amber-600 mb-2">@L["VariantsStock"]</h3>
             <table class="w-full text-sm border-collapse">
                 <thead class="bg-neutral-900 text-gray-400">
                     <tr>
-                        <th class="px-3 py-2 text-left">Size</th>
-                        <th class="px-3 py-2 text-left">Stock</th>
+                        <th class="px-3 py-2 text-left">@L["Size"]</th>
+                        <th class="px-3 py-2 text-left">@L["Stock"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,10 +80,9 @@ else
                 </tbody>
             </table>
         </div>
-
         <!-- Images -->
         <div class="mt-8">
-            <h3 class="text-lg font-semibold text-amber-600 mb-2">Product Images</h3>
+            <h3 class="text-lg font-semibold text-amber-600 mb-2">@L["ProductImages"]</h3>
             <InputFile OnChange="HandleImageUpload" multiple class="mb-4" />
             <div class="grid grid-cols-6 gap-4">
                 @foreach (var img in product.Images.OrderBy(i => i.SortOrder))
@@ -99,48 +90,42 @@ else
                     <div class="relative border rounded overflow-hidden w-32 h-44 bg-neutral-800">
                         <img src="@($"{Config["ApiBaseUrl"]}{img.ImageUrl}")"
                              class="w-full h-full object-cover" />
-
                         @if (img.SortOrder == 0)
                         {
-                            <span class="absolute top-1 left-1 bg-amber-600 text-xs text-white px-2 py-0.5 rounded">Thumbnail</span>
+                            <span class="absolute top-1 left-1 bg-amber-600 text-xs text-white px-2 py-0.5 rounded">@L["Thumbnail"]</span>
                         }
-
                         <div class="absolute bottom-1 left-1 flex space-x-1">
                             <button type="button"
                                     class="bg-amber-600 text-xs text-white px-2 py-0.5 rounded"
                                     @onclick="() => SetThumbnail(img)">
-                                Set as Thumbnail
+                                @L["SetAsThumbnail"]
                             </button>
                             <button type="button"
                                     class="bg-red-600 text-xs text-white px-2 py-0.5 rounded"
                                     @onclick="() => RemoveImage(img)">
-                                X
+                                @L["Delete"]
                             </button>
                         </div>
                     </div>
                 }
             </div>
         </div>
-
         <!-- Save / Cancel -->
         <div class="mt-8 flex space-x-4">
             <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded" disabled="@isSaving">
-                @(isSaving ? "Saving..." : "Save Changes")
+                @(isSaving? L["Saving"] : L["SaveChanges"])
             </button>
             <button type="button" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded" @onclick="Cancel">
-                Cancel
+                @L["Cancel"]
             </button>
         </div>
     </AutoForm>
 }
-
 @code {
     [Parameter] public int Id { get; set; }
-
     private ProductDetailsDto? product;
     private bool isLoading = true;
     private bool isSaving = false;
-
     protected override async Task OnInitializedAsync()
     {
         try
@@ -148,7 +133,6 @@ else
             var token = await AdminAuth.GetTokenAsync();
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
             product = await Http.GetFromJsonAsync<ProductDetailsDto>($"products/{Id}");
         }
         catch (Exception ex)
@@ -157,117 +141,97 @@ else
         }
         isLoading = false;
     }
-
     private async Task HandleSave()
     {
         if (product == null) return;
         isSaving = true;
-
         var token = await AdminAuth.GetTokenAsync();
         Http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
         try
         {
             // Update product fields
             await Http.PutAsJsonAsync($"products/{product.Id}", new UpdateProductDto
-                {
-                    Name_en = product.Name_En,
-                    Name_de = product.Name_De,
-                    Description_en = product.Description_En,
-                    Description_de = product.Description_De,
-                    Price = product.Price,
-                    CategoryId = product.CategoryId,
-                    IsFeatured = product.IsFeatured
-                });
-
+            {
+                Name_en = product.Name_En,
+                Name_de = product.Name_De,
+                Description_en = product.Description_En,
+                Description_de = product.Description_De,
+                Price = product.Price,
+                CategoryId = product.CategoryId,
+                IsFeatured = product.IsFeatured
+            });
             // Update stock for variants
             foreach (var v in product.Variants)
             {
                 await Http.PutAsJsonAsync($"products/{product.Id}/variants/{v.Id}", new UpdateProductVariantDto
-                    {
-                        Size = v.Size,
-                        Stock = v.Stock
-                    });
+                {
+                    Size = v.Size,
+                    Stock = v.Stock
+                });
             }
-
             Nav.NavigateTo("/admin?tab=Products");
         }
         catch (Exception ex)
         {
             Console.WriteLine("⚠️ Failed to save product: " + ex.Message);
         }
-
         isSaving = false;
     }
-
     private async Task HandleImageUpload(InputFileChangeEventArgs e)
     {
         if (product == null) return;
-
         var token = await AdminAuth.GetTokenAsync();
         Http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
         foreach (var file in e.GetMultipleFiles())
         {
             using var content = new MultipartFormDataContent();
             var stream = file.OpenReadStream(10 * 1024 * 1024);
             content.Add(new StreamContent(stream), "File", file.Name);
             content.Add(new StringContent((product.Images?.Count ?? 0).ToString()), "SortOrder");
-
             var response = await Http.PostAsync($"products/{product.Id}/images/upload", content);
             response.EnsureSuccessStatusCode();
-
             var uploaded = await response.Content.ReadFromJsonAsync<ProductImageDto>();
             if (uploaded != null) product.Images.Add(uploaded);
         }
     }
-
     private async Task RemoveImage(ProductImageDto img)
     {
         if (product == null) return;
-
         var token = await AdminAuth.GetTokenAsync();
         Http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
         var response = await Http.DeleteAsync($"products/{product.Id}/images/{img.Id}");
         if (response.IsSuccessStatusCode)
         {
             product.Images.Remove(img);
         }
     }
-
     private async Task SetThumbnail(ProductImageDto selected)
     {
         if (product == null) return;
-
         // Move selected image to the front
         int sort = 1;
         foreach (var img in product.Images.OrderBy(i => i.Id))
         {
             img.SortOrder = (img.Id == selected.Id) ? 0 : sort++;
         }
-
         // Send reorder to API
         var items = product.Images.Select(i => new
         {
             ImageId = i.Id,
             SortOrder = i.SortOrder
         }).ToList();
-
         var token = await AdminAuth.GetTokenAsync();
         Http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
         var response = await Http.PutAsJsonAsync($"products/{product.Id}/images/reorder", items);
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine("⚠️ Failed to update thumbnail.");
         }
     }
-
     private void Cancel()
     {
         Nav.NavigateTo("/admin?tab=Products");

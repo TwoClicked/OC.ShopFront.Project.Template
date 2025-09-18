@@ -117,31 +117,70 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="AccountDisabled" xml:space="preserve">
+    <value>Dieses Konto wurde deaktiviert. Bitte kontaktiere den Support.</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="Email" xml:space="preserve">
+    <value>E-Mail</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="EmailPlaceholder" xml:space="preserve">
+    <value>Gib deine E-Mail-Adresse ein</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="English" xml:space="preserve">
+    <value>Englisch</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="FirstName" xml:space="preserve">
+    <value>Vorname</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="FirstNamePlaceholder" xml:space="preserve">
+    <value>Vorname</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="ForgotPassword" xml:space="preserve">
+    <value>Passwort vergessen?</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="German" xml:space="preserve">
+    <value>Deutsch</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>Zugangsdaten ungültig</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Sprache</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Nachname</value>
+  </data>
+  <data name="LastNamePlaceholder" xml:space="preserve">
+    <value>Nachname</value>
+  </data>
+  <data name="LoginAction" xml:space="preserve">
+    <value>Anmelden</value>
+  </data>
+  <data name="LoginTab" xml:space="preserve">
+    <value>Anmelden</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Passwort</value>
+  </data>
+  <data name="PasswordPlaceholder" xml:space="preserve">
+    <value>Gib dein Passwort ein</value>
+  </data>
+  <data name="RegisterAction" xml:space="preserve">
+    <value>Registrieren</value>
+  </data>
+  <data name="RegisterTab" xml:space="preserve">
+    <value>Registrieren</value>
+  </data>
+  <data name="RegistrationFailed" xml:space="preserve">
+    <value>Registrierung fehlgeschlagen.</value>
+  </data>
+  <data name="RegistrationSuccess" xml:space="preserve">
+    <value>Registrierung erfolgreich! Bitte anmelden.</value>
+  </data>
+  <data name="SuccessFragment" xml:space="preserve">
+    <value>erfolgreich</value>
+  </data>
+  <data name="UpgradedFragment" xml:space="preserve">
+    <value>hochgestuft</value>
   </data>
 </root>

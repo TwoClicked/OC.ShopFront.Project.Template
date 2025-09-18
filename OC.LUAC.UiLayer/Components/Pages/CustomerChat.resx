@@ -117,31 +117,40 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
-  </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
-  </data>
-  <data name="Nav_Admin" xml:space="preserve">
+  <data name="Admin" xml:space="preserve">
     <value>Admin</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="AdminWillJoinSoon" xml:space="preserve">
+    <value>An admin will be with you shortly.</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="LiveChat" xml:space="preserve">
+    <value>Live Chat</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="LoadHistoryError" xml:space="preserve">
+    <value>Failed to load history: {0}</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="MustBeLoggedIn" xml:space="preserve">
+    <value>You must be logged in to start chat.</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="Send" xml:space="preserve">
+    <value>Send</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="SessionClosed" xml:space="preserve">
+    <value>Chat session has been closed.</value>
+  </data>
+  <data name="SessionClosedByAdmin" xml:space="preserve">
+    <value>This chat session has been closed by an admin.</value>
+  </data>
+  <data name="StartChat" xml:space="preserve">
+    <value>Start Chat</value>
+  </data>
+  <data name="TypeMessage" xml:space="preserve">
+    <value>Type a message...</value>
+  </data>
+  <data name="WelcomeMessage" xml:space="preserve">
+    <value>Thank you for reaching out. An admin will review your message and get back to you within 24 hours. Please explain your issue in as much detail as possible.</value>
+  </data>
+  <data name="You" xml:space="preserve">
+    <value>You</value>
   </data>
 </root>

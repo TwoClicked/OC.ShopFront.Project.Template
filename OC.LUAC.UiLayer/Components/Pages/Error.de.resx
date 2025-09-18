@@ -117,31 +117,28 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="DevelopmentMode" xml:space="preserve">
+    <value>Entwicklungsmodus</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="DevSwapInfo" xml:space="preserve">
+    <value>Das Wechseln in die &lt;strong&gt;Entwicklungsumgebung&lt;/strong&gt; zeigt detailliertere Informationen zum aufgetretenen Fehler an.</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="DevWarning1" xml:space="preserve">
+    <value>Die Entwicklungsumgebung sollte für produktive Anwendungen nicht aktiviert sein.</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="DevWarning2" xml:space="preserve">
+    <value>Dies kann dazu führen, dass sensible Informationen aus Ausnahmen den Endbenutzern angezeigt werden. Für das lokale Debugging aktiviere die &lt;strong&gt;Entwicklungsumgebung&lt;/strong&gt;, indem du die Umgebungsvariable &lt;strong&gt;ASPNETCORE_ENVIRONMENT&lt;/strong&gt; auf &lt;strong&gt;Development&lt;/strong&gt; setzt und die App neu startest.</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="ErrorHeader" xml:space="preserve">
+    <value>Fehler.</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="ErrorMessage" xml:space="preserve">
+    <value>Bei der Verarbeitung deiner Anfrage ist ein Fehler aufgetreten.</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="RequestIdLabel" xml:space="preserve">
+    <value>Anfrage-ID:</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
-  </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="Title" xml:space="preserve">
+    <value>Fehler</value>
   </data>
 </root>

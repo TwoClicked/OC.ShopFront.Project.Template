@@ -1,113 +1,98 @@
 ﻿@page "/admin/vouchers/new"
 @page "/admin/vouchers/edit/{VoucherId:int}"
-
 @using OC.LUAC.ObjectLayer.Orders
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject AdminAuthService AdminAuth
+@inject Microsoft.Extensions.Localization.IStringLocalizer<AdminVouchersForm> L
 
 <h2 class="text-2xl font-bold mb-6 text-amber-600">
-    @(VoucherId == null ? "Add Voucher" : "Edit Voucher")
+    @(VoucherId == null ? L["AddVoucher"] : L["EditVoucher"])
 </h2>
-
 <AutoForm Model="@vm" OnValidSubmit="@SaveVoucher">
     <DataAnnotationsValidator />
     <ValidationSummary class="text-red-400 mb-4" />
-
     <div class="space-y-4 bg-neutral-900 p-6 rounded-md border border-neutral-700">
-
         <!-- Voucher Code -->
         <div>
-            <label class="block text-sm font-medium mb-1 text-gray-300">Voucher Code *</label>
+            <label class="block text-sm font-medium mb-1 text-gray-300">@L["VoucherCodeLabel"] *</label>
             <InputText @bind-Value="vm.Code"
                        class="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-amber-600" />
         </div>
-
         <!-- Free Shipping -->
         <div class="flex items-center space-x-2">
-            <InputCheckbox @bind-Value="vm.AppliesToShipping"
-                           class="accent-amber-600" />
-            <span class="text-gray-300">Free Shipping</span>
+            <InputCheckbox @bind-Value="vm.AppliesToShipping" class="accent-amber-600" />
+            <span class="text-gray-300">@L["FreeShippingLabel"]</span>
         </div>
-
         <!-- Discount Type -->
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm mb-1 text-gray-300">Percentage Discount</label>
+                <label class="block text-sm mb-1 text-gray-300">@L["PercentageDiscountLabel"]</label>
                 <InputNumber @bind-Value="vm.Percentage"
                              class="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-amber-600" />
             </div>
             <div>
-                <label class="block text-sm mb-1 text-gray-300">Flat Rate Discount</label>
+                <label class="block text-sm mb-1 text-gray-300">@L["FlatRateDiscountLabel"]</label>
                 <InputNumber @bind-Value="vm.FixedAmount"
                              class="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-amber-600" />
             </div>
         </div>
-
         <!-- Dates -->
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm mb-1 text-gray-300">Start Date</label>
+                <label class="block text-sm mb-1 text-gray-300">@L["StartDateLabel"]</label>
                 <InputDate @bind-Value="vm.StartDate"
                            class="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-amber-600" />
             </div>
             <div>
-                <label class="block text-sm mb-1 text-gray-300">End Date</label>
+                <label class="block text-sm mb-1 text-gray-300">@L["EndDateLabel"]</label>
                 <InputDate @bind-Value="vm.EndDate"
                            class="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-amber-600" />
             </div>
         </div>
-
         <!-- Max Usage -->
         <div>
-            <label class="block text-sm mb-1 text-gray-300">Max Usage Count</label>
+            <label class="block text-sm mb-1 text-gray-300">@L["MaxUsageCountLabel"]</label>
             <InputNumber @bind-Value="vm.MaxUsageCount"
                          class="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-amber-600" />
         </div>
-
         <!-- Current Usage (read-only) -->
         @if (VoucherId != null)
         {
             <div>
-                <label class="block text-sm mb-1 text-gray-300">Current Usage (Read Only)</label>
+                <label class="block text-sm mb-1 text-gray-300">@L["CurrentUsageLabel"]</label>
                 <input value="@vm.CurrentUsageCount"
                        readonly
                        class="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-gray-400 cursor-not-allowed" />
             </div>
         }
     </div>
-
     <!-- Buttons -->
     <div class="flex justify-end space-x-3 mt-6">
         <button type="button"
                 class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded"
                 @onclick="Cancel">
-            Cancel
+            @L["Cancel"]
         </button>
         <button type="submit"
                 class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded">
-            Save
+            @L["Save"]
         </button>
     </div>
-
     @if (!string.IsNullOrEmpty(error))
     {
         <p class="text-red-400 mt-4">@error</p>
     }
 </AutoForm>
-
 @code {
     [Parameter] public int? VoucherId { get; set; }
-
     private Voucher vm = new();
     private string? error;
-
     protected override async Task OnInitializedAsync()
     {
         var token = await AdminAuth.GetTokenAsync();
         Http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
         if (VoucherId != null)
         {
             try
@@ -116,11 +101,10 @@
             }
             catch
             {
-                error = "Failed to load voucher.";
+                error = L["LoadError"];
             }
         }
     }
-
     private async Task SaveVoucher()
     {
         try
@@ -130,7 +114,6 @@
                 resp = await Http.PostAsJsonAsync("vouchers", vm);
             else
                 resp = await Http.PutAsJsonAsync($"vouchers/{VoucherId}", vm);
-
             if (resp.IsSuccessStatusCode)
                 Nav.NavigateTo("/admin?tab=Vouchers");
             else
@@ -138,10 +121,9 @@
         }
         catch (Exception ex)
         {
-            error = "Failed to save voucher: " + ex.Message;
+            error = L["SaveError"] + ": " + ex.Message;
         }
     }
-
     private void Cancel()
     {
         Nav.NavigateTo("/admin?tab=Vouchers");

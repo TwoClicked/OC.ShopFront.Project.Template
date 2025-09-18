@@ -117,31 +117,46 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="AddVoucher" xml:space="preserve">
+    <value>Gutschein hinzufügen</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="CurrentUsageLabel" xml:space="preserve">
+    <value>Aktuelle Nutzung (nur Lesend)</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="EditVoucher" xml:space="preserve">
+    <value>Gutschein bearbeiten</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="EndDateLabel" xml:space="preserve">
+    <value>Enddatum</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="FlatRateDiscountLabel" xml:space="preserve">
+    <value>Festbetrag Rabatt</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="FreeShippingLabel" xml:space="preserve">
+    <value>Gratis Versand</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="LoadError" xml:space="preserve">
+    <value>Gutschein konnte nicht geladen werden.</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="MaxUsageCountLabel" xml:space="preserve">
+    <value>Gutschein konnte nicht gespeichert werden</value>
+  </data>
+  <data name="PercentageDiscountLabel" xml:space="preserve">
+    <value>Prozentualer Rabatt</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="SaveError" xml:space="preserve">
+    <value>Gutschein konnte nicht gespeichert werden</value>
+  </data>
+  <data name="StartDateLabel" xml:space="preserve">
+    <value>Startdatum</value>
+  </data>
+  <data name="VoucherCodeLabel" xml:space="preserve">
+    <value>Gutscheincode</value>
   </data>
 </root>

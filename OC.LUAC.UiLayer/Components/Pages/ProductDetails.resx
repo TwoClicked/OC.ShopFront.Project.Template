@@ -117,31 +117,34 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="AddedToCart" xml:space="preserve">
+    <value>Added to cart.</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="AddFail" xml:space="preserve">
+    <value>Could not add item (quantity would exceed stock).</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="AddToCart" xml:space="preserve">
+    <value>Add to Cart</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="AvailableSizes" xml:space="preserve">
+    <value>Available Sizes</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="Back" xml:space="preserve">
+    <value>Back</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="InStock" xml:space="preserve">
+    <value>In stock</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="LoadingProduct" xml:space="preserve">
+    <value>Loading product details...</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="OnlyNLeft" xml:space="preserve">
+    <value>Only {0} left in stock.</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="OutOfStock" xml:space="preserve">
+    <value>Out of stock</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantity</value>
   </data>
 </root>

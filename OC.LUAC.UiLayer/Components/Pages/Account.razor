@@ -5,15 +5,16 @@
 @using OC.LUAC.UiLayer.Services
 @inject AuthService AuthService
 @inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Account> L
 
 <section class="min-h-screen bg-neutral-900 text-white p-8">
     <div class="max-w-5xl mx-auto bg-neutral-800 rounded-lg shadow-lg p-6">
         <!-- Tabs -->
         <div class="flex space-x-6 border-b border-neutral-700 mb-6">
-            <button class="@GetTabClass("profile")" @onclick='() => SwitchTab("profile")'>Profile</button>
-            <button class="@GetTabClass("password")" @onclick='() => SwitchTab("password")'>Change Password</button>
-            <button class="@GetTabClass("orders")" @onclick='() => SwitchTab("orders")'>Orders</button>
-            <button class="@GetTabClass("danger")" @onclick='() => SwitchTab("danger")'>Danger Zone</button>
+            <button class="@GetTabClass("profile")" @onclick='() => SwitchTab("profile")'>@L["Profile"]</button>
+            <button class="@GetTabClass("password")" @onclick='() => SwitchTab("password")'>@L["ChangePassword"]</button>
+            <button class="@GetTabClass("orders")" @onclick='() => SwitchTab("orders")'>@L["Orders"]</button>
+            <button class="@GetTabClass("danger")" @onclick='() => SwitchTab("danger")'>@L["DangerZone"]</button>
         </div>
 
         <!-- Profile -->
@@ -21,7 +22,7 @@
         {
             @if (profile == null)
             {
-                <p>Loading profile...</p>
+                <p>@L["LoadingProfile"]</p>
             }
             else
             {
@@ -30,35 +31,35 @@
                     <ValidationSummary />
 
                     <div class="mb-4">
-                        <label class="block text-sm font-medium">First Name</label>
+                        <label class="block text-sm font-medium">@L["FirstName"]</label>
                         <InputText @bind-Value="profile.FirstName"
-                        class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                                   class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-sm font-medium">Last Name</label>
+                        <label class="block text-sm font-medium">@L["LastName"]</label>
                         <InputText @bind-Value="profile.LastName"
-                        class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                                   class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-sm font-medium">Email (read-only)</label>
+                        <label class="block text-sm font-medium">@L["EmailReadonly"]</label>
                         <input value="@profile.Email" disabled
-                        class="mt-1 w-full rounded-md bg-neutral-700 text-gray-400 p-2" />
+                               class="mt-1 w-full rounded-md bg-neutral-700 text-gray-400 p-2" />
                     </div>
 
                     <div class="mb-6">
-                        <label class="block text-sm font-medium">Language</label>
+                        <label class="block text-sm font-medium">@L["Language"]</label>
                         <InputSelect @bind-Value="profile.Language"
-                        class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2">
-                            <option value="en">English</option>
-                            <option value="de">German</option>
+                                     class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2">
+                            <option value="en">@L["English"]</option>
+                            <option value="de">@L["German"]</option>
                         </InputSelect>
                     </div>
 
                     <button type="submit"
-                    class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
-                        Save Changes
+                            class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
+                        @L["SaveChanges"]
                     </button>
                 </AutoForm>
             }
@@ -72,25 +73,25 @@
                 <ValidationSummary />
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Old Password</label>
+                    <label class="block text-sm font-medium">@L["OldPassword"]</label>
                     <InputText @bind-Value="passwordModel.OldPassword" type="password"
-                    class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">New Password</label>
+                    <label class="block text-sm font-medium">@L["NewPassword"]</label>
                     <InputText @bind-Value="passwordModel.NewPassword" type="password"
-                    class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Confirm Password</label>
+                    <label class="block text-sm font-medium">@L["ConfirmPassword"]</label>
                     <InputText @bind-Value="passwordModel.ConfirmPassword" type="password"
-                    class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                               class="mt-1 w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
                 </div>
 
                 <button type="submit"
-                class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
-                    Change Password
+                        class="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700">
+                    @L["ChangePassword"]
                 </button>
             </AutoForm>
         }
@@ -100,22 +101,22 @@
         {
             @if (orders == null)
             {
-                <p>Loading orders...</p>
+                <p>@L["LoadingOrders"]</p>
             }
             else if (!orders.Any())
             {
-                <p>No orders found.</p>
+                <p>@L["NoOrders"]</p>
             }
             else
             {
                 <table class="w-full text-left border-collapse">
                     <thead class="border-b border-neutral-700 text-gray-400 text-sm">
                         <tr>
-                            <th class="py-2 px-4">Order #</th>
-                            <th class="py-2 px-4">Date</th>
-                            <th class="py-2 px-4">Total</th>
-                            <th class="py-2 px-4">Status</th>
-                            <th class="py-2 px-4">Actions</th>
+                            <th class="py-2 px-4">@L["OrderNumber"]</th>
+                            <th class="py-2 px-4">@L["Date"]</th>
+                            <th class="py-2 px-4">@L["Total"]</th>
+                            <th class="py-2 px-4">@L["Status"]</th>
+                            <th class="py-2 px-4">@L["Actions"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -128,7 +129,7 @@
                                 <td class="py-2 px-4">
                                     @if (order.Status == "Cancelled")
                                     {
-                                        <span class="text-red-500 font-semibold">@order.Status</span>
+                                        <span class="text-red-500 font-semibold">@L["Cancelled"]</span>
                                     }
                                     else
                                     {
@@ -139,8 +140,8 @@
                                     @if (order.Status == "PendingPayment")
                                     {
                                         <button @onclick="() => CancelOrder(order.Id)"
-                                        class="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700">
-                                            Cancel
+                                                class="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700">
+                                            @L["Cancel"]
                                         </button>
                                     }
                                 </td>
@@ -156,20 +157,18 @@
         {
             <div class="space-y-4">
                 <p class="text-red-400 text-sm">
-                    ⚠️ Deleting your account is permanent. All your data will be lost.
+                    ⚠️ @L["DangerZoneWarning"]
                 </p>
 
-                <!-- Input confirmation -->
                 <input @bind="deleteConfirmation"
-                placeholder='Type "delete" to confirm'
-                class="w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
+                       placeholder='@L["DeletePlaceholder"]'
+                       class="w-full rounded-md bg-neutral-900 text-white border border-neutral-700 p-2" />
 
-                <!-- Delete button -->
                 <button @onclick="ConfirmDelete"
-                disabled="@(!CanDelete)"
-                class="w-full py-2 px-4 rounded-md transition-colors
-                               @(CanDelete ? "bg-red-600 hover:bg-red-700 text-white" : "bg-neutral-700 text-gray-400 cursor-not-allowed")">
-                    Delete Account
+                        disabled="@(!CanDelete)"
+                        class="w-full py-2 px-4 rounded-md transition-colors
+                                   @(CanDelete ? "bg-red-600 hover:bg-red-700 text-white" : "bg-neutral-700 text-gray-400 cursor-not-allowed")">
+                    @L["DeleteAccount"]
                 </button>
             </div>
         }
@@ -187,7 +186,7 @@
     private List<AdminOrderSummaryDto>? orders;
     private ChangePasswordFormDto passwordModel = new();
     private string? Message;
-    private string MessageCss { get; set; }
+    private string MessageCss { get; set; } = "";
 
     private string deleteConfirmation = string.Empty;
     private bool CanDelete => deleteConfirmation.Equals("delete", StringComparison.OrdinalIgnoreCase);
@@ -227,39 +226,41 @@
         if (profile == null) return;
 
         var updateDto = new UpdateCustomerDto
-            {
-                FirstName = profile.FirstName,
-                LastName = profile.LastName,
-                Language = profile.Language
-            };
+        {
+            FirstName = profile.FirstName,
+            LastName = profile.LastName,
+            Language = profile.Language
+        };
 
         var success = await AuthService.UpdateProfileAsync(updateDto);
-        Message = success ? "Profile updated!" : "Failed to update profile.";
+        Message = success ? L["ProfileUpdated"] : L["ProfileUpdateFailed"];
+        MessageCss = success ? "text-green-500" : "text-red-500";
     }
 
     private async Task ChangePassword()
     {
         if (passwordModel.NewPassword != passwordModel.ConfirmPassword)
         {
-            Message = "❌ New password and confirmation do not match.";
+            Message = L["PasswordMismatch"];
+            MessageCss = "text-red-500";
             return;
         }
 
         var dto = new ChangePasswordFormDto
-            {
-                OldPassword = passwordModel.OldPassword,
-                NewPassword = passwordModel.NewPassword
-            };
+        {
+            OldPassword = passwordModel.OldPassword,
+            NewPassword = passwordModel.NewPassword
+        };
 
         var success = await AuthService.ChangePasswordAsync(dto);
         if (success)
         {
-            Message = "✅ Password changed!";
+            Message = L["PasswordChanged"];
             MessageCss = "text-green-500";
         }
         else
         {
-            Message = "❌ Failed to change password.";
+            Message = L["PasswordChangeFailed"];
             MessageCss = "text-red-500";
         }
         passwordModel = new(); // reset form
@@ -269,7 +270,7 @@
     {
         if (!CanDelete) return;
 
-        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you absolutely sure you want to delete your account? This cannot be undone.");
+        var confirmed = await JS.InvokeAsync<bool>("confirm", L["ConfirmDeletePrompt"]);
         if (confirmed)
         {
             await DeleteAccount();
@@ -286,13 +287,14 @@
         }
         else
         {
-            Message = "Failed to delete account.";
+            Message = L["DeleteFailed"];
+            MessageCss = "text-red-500";
         }
     }
 
     private async Task CancelOrder(int orderId)
     {
-        var confirmed = await JS.InvokeAsync<bool>("confirm", "Cancel this order?");
+        var confirmed = await JS.InvokeAsync<bool>("confirm", L["ConfirmCancelOrder"]);
         if (confirmed)
         {
             var success = await AuthService.CancelOrderAsync(orderId);
@@ -303,7 +305,8 @@
             }
             else
             {
-                Message = "Failed to cancel order.";
+                Message = L["CancelFailed"];
+                MessageCss = "text-red-500";
             }
         }
     }

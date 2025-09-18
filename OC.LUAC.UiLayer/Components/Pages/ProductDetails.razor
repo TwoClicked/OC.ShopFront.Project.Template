@@ -6,21 +6,19 @@
 @inject NavigationManager Nav
 @inject IConfiguration Config
 @inject CartService CartService
+@inject Microsoft.Extensions.Localization.IStringLocalizer<ProductDetails> L
 
 <div class="bg-neutral-900 text-white min-h-screen py-16 px-6 md:px-12">
     @if (product == null)
     {
-        <p class="text-center text-gray-400">Loading product details...</p>
+        <p class="text-center text-gray-400">@L["LoadingProduct"]</p>
     }
     else
     {
         <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
-
             <!-- Product Images -->
             <div class="relative">
-                <img src="@currentImage" alt="@product.Name_En"
-                     class="w-full h-[500px] object-cover rounded-lg" />
-
+                <img src="@currentImage" alt="@GetProductName()" class="w-full h-[500px] object-cover rounded-lg" />
                 @if (product.Images.Count > 1)
                 {
                     <button @onclick="PrevImage"
@@ -33,80 +31,68 @@
                     </button>
                 }
             </div>
-
             <!-- Product Info -->
             <div>
-                <h1 class="text-3xl font-bold mb-4">@product.Name_En</h1>
+                <h1 class="text-3xl font-bold mb-4">@GetProductName()</h1>
                 <p class="text-amber-600 text-xl mb-4">@product.Price.ToString("C", new System.Globalization.CultureInfo("de-DE"))</p>
-                <p class="text-gray-300 mb-6">@product.Description_En</p>
-
-                <h3 class="font-semibold mb-2">Available Sizes</h3>
+                <p class="text-gray-300 mb-6">@GetProductDescription()</p>
+                <h3 class="font-semibold mb-2">@L["AvailableSizes"]</h3>
                 <div class="flex gap-2 mb-2">
                     @foreach (var variant in product.Variants)
                     {
                         <button @onclick="() => SelectSize(variant)"
                                 disabled="@(variant.Id == 0 || variant.Stock == 0)"
                                 class="px-4 py-2 border rounded
-                                       @(selectedSize == variant.Size ? "bg-amber-600 text-white" : "bg-neutral-800 text-white")
-                                       @(variant.Id == 0 || variant.Stock == 0 ? "opacity-40 cursor-not-allowed" : "")">
+                                               @(selectedSize == variant.Size ? "bg-amber-600 text-white" : "bg-neutral-800 text-white")
+                                               @(variant.Id == 0 || variant.Stock == 0 ? "opacity-40 cursor-not-allowed" : "")">
                             @variant.Size
                         </button>
                     }
                 </div>
-
                 @if (selectedVariant != null)
                 {
                     <p class="text-sm mb-4 @(selectedVariant.Stock > 0 ? "text-amber-600" : "text-red-500")">
-                        @(selectedVariant.Stock > 0 ? "In stock" : "Out of stock")
+                        @(selectedVariant.Stock > 0 ? L["InStock"] : L["OutOfStock"])
                     </p>
                 }
-
                 <!-- Quantity -->
                 @if (selectedVariant != null && selectedVariant.Stock > 0)
                 {
                     <div class="flex items-center gap-6 mb-6">
-                        <label class="text-sm text-gray-300">Quantity</label>
+                        <label class="text-sm text-gray-300">@L["Quantity"]</label>
                         <input type="number" min="1"
                                class="w-20 text-center bg-neutral-800 border border-neutral-700 mr-4"
                                value="@qty" @oninput="OnQtyInput" />
                     </div>
                 }
-
                 @if (!string.IsNullOrEmpty(message))
                 {
                     <p class="text-sm @(messageIsError ? "text-red-500" : "text-amber-500") mb-2">@message</p>
                 }
-
                 <div class="mt-2 flex gap-4">
                     <button class="px-6 py-3 bg-amber-600 text-white rounded disabled:opacity-50"
                             disabled="@(selectedVariant == null || selectedVariant.Id == 0 || selectedVariant.Stock == 0)"
                             @onclick="AddToCart">
-                        Add to Cart
+                        @L["AddToCart"]
                     </button>
-
                     <button @onclick="GoBack"
                             class="px-6 py-3 bg-neutral-700 text-white rounded">
-                        ← Back
+                        @L["Back"]
                     </button>
                 </div>
             </div>
         </div>
     }
 </div>
-
 @code {
     [Parameter] public int Id { get; set; }
-
     [Parameter, SupplyParameterFromQuery(Name = "origin")]
     public string Origin { get; set; } = "home";
-
     private ProductDetailsDto? product;
     private string currentImage = "";
     private int currentIndex = 0;
-
     private string? selectedSize;
     private ProductVariantDto? selectedVariant;
-
     private int qty = 1;
     private string? message;
     private bool messageIsError;
@@ -114,26 +100,22 @@
     protected override async Task OnInitializedAsync()
     {
         product = await Http.GetFromJsonAsync<ProductDetailsDto>($"products/{Id}");
-
         if (product != null)
         {
             // All possible sizes
             var allSizes = new[] { "XS", "S", "M", "L", "XL", "XXL" };
-
             // Build UI sizes by joining DB variants with full size list
             var sizeOptions = allSizes.Select(size =>
             {
                 var real = product.Variants.FirstOrDefault(v => v.Size == size);
                 return new ProductVariantDto
-                    {
-                        Id = real?.Id ?? -1,   // ✅ mark missing with -1, not 0
-                        Size = size,
-                        Stock = real?.Stock ?? 0
-                    };
+                {
+                    Id = real?.Id ?? -1,
+                    Size = size,
+                    Stock = real?.Stock ?? 0
+                };
             }).ToList();
-
             product.Variants = sizeOptions;
-
             if (product.Images.Any())
                 currentImage = Config["ApiBaseUrl"].TrimEnd('/') + product.Images.First().ImageUrl;
             else if (!string.IsNullOrEmpty(product.ThumbnailUrl))
@@ -143,33 +125,33 @@
         }
     }
 
+    private string GetProductName() =>
+        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de" ? product?.Name_De : product?.Name_En;
+
+    private string GetProductDescription() =>
+        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de" ? product?.Description_De : product?.Description_En;
+
     private void SelectSize(ProductVariantDto variant)
     {
-        if (variant.Id <= 0) return; 
-
+        if (variant.Id <= 0) return;
         selectedSize = variant.Size;
         selectedVariant = variant;
         message = null;
-
         if (selectedVariant.Stock > 0 && qty > selectedVariant.Stock)
             qty = selectedVariant.Stock;
     }
-
-
     private void PrevImage()
     {
         if (product?.Images == null || product.Images.Count == 0) return;
         currentIndex = (currentIndex - 1 + product.Images.Count) % product.Images.Count;
         currentImage = Config["ApiBaseUrl"].TrimEnd('/') + product.Images[currentIndex].ImageUrl;
     }
-
     private void NextImage()
     {
         if (product?.Images == null || product.Images.Count == 0) return;
         currentIndex = (currentIndex + 1) % product.Images.Count;
         currentImage = Config["ApiBaseUrl"].TrimEnd('/') + product.Images[currentIndex].ImageUrl;
     }
-
     private void GoBack()
     {
         if (Origin == "shop")
@@ -177,18 +159,6 @@
         else
             Nav.NavigateTo("/");
     }
-
-    private void IncQty()
-    {
-        if (selectedVariant == null) { qty++; return; }
-        if (qty < selectedVariant.Stock) qty++;
-    }
-
-    private void DecQty()
-    {
-        if (qty > 1) qty--;
-    }
-
     private void OnQtyInput(ChangeEventArgs e)
     {
         if (!int.TryParse(e.Value?.ToString(), out var v)) v = 1;
@@ -196,41 +166,36 @@
         if (selectedVariant != null && v > selectedVariant.Stock) v = selectedVariant.Stock;
         qty = v;
     }
-
     private async Task AddToCart()
     {
         if (product == null || selectedVariant == null || selectedVariant.Id <= 0)
-            return; 
-
+            return;
         if (selectedVariant.Stock <= 0)
         {
             messageIsError = true;
-            message = "Out of stock";
+            message = L["OutOfStock"];
             return;
         }
-
         if (qty > selectedVariant.Stock)
         {
             messageIsError = true;
-            message = $"Only {selectedVariant.Stock} left in stock.";
+            message = string.Format(L["OnlyNLeft"], selectedVariant.Stock);
             qty = selectedVariant.Stock;
             return;
         }
-
         var added = await CartService.AddOrIncrease(new CartItemDto
-            {
-                ProductId = product.Id,
-                ProductVariantId = selectedVariant.Id,
-                ProductName = product.Name_En,
-                Size = selectedVariant.Size,
-                Price = product.Price,
-                Quantity = qty,
-                MaxStock = selectedVariant.Stock,
-                ThumbnailUrl = product.ThumbnailUrl
-            });
-
+        {
+            ProductId = product.Id,
+            ProductVariantId = selectedVariant.Id,
+            ProductName = GetProductName(),
+            Size = selectedVariant.Size,
+            Price = product.Price,
+            Quantity = qty,
+            MaxStock = selectedVariant.Stock,
+            ThumbnailUrl = product.ThumbnailUrl
+        });
         messageIsError = !added;
-        message = added ? "Added to cart." : "Could not add item (quantity would exceed stock).";
+        message = added ? L["AddedToCart"] : L["AddFail"];
         StateHasChanged();
     }
 }

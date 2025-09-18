@@ -1,29 +1,28 @@
 ﻿@page "/thank-you/{OrderId}"
 @using Microsoft.AspNetCore.Components
+@inject Microsoft.Extensions.Localization.IStringLocalizer<OC.LUAC.UiLayer.Components.Pages.ThankYou> L
 
 <section class="py-24 px-6 md:px-12 text-white text-center">
     <div class="flex flex-col items-center gap-8 max-w-2xl mx-auto">
-        <h2 class="text-3xl font-bold">Thank you for your order!</h2>
-
+        <h2 class="text-3xl font-bold">@L["ThankYouHeader"]</h2>
         @if (!string.IsNullOrEmpty(OrderId))
         {
             <div class="space-y-2">
                 <p class="text-gray-300">
-                    Your order number is
+                    @L["OrderNumberText"]
                     <span class="text-amber-600 font-semibold">@OrderId</span>.
                 </p>
                 <p class="text-gray-400">
-                    A confirmation email with your order details will follow shortly.
+                    @L["ConfirmationEmail"]
                 </p>
             </div>
         }
         else
         {
-            <p class="text-red-400">We could not find your order ID.</p>
+            <p class="text-red-400">@L["OrderNotFound"]</p>
         }
-
         <a href="/shop" class="px-6 py-3 bg-amber-600 rounded hover:bg-amber-700">
-            Continue shopping
+            @L["ContinueShopping"]
         </a>
     </div>
 </section>

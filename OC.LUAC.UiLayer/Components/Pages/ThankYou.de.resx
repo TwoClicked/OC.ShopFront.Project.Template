@@ -117,31 +117,19 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="ConfirmationEmail" xml:space="preserve">
+    <value>Eine Bestätigungs-E-Mail mit den Bestelldetails folgt in Kürze.</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="ContinueShopping" xml:space="preserve">
+    <value>Weiter einkaufen</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="OrderNotFound" xml:space="preserve">
+    <value>Wir konnten deine Bestell-ID nicht finden.</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="OrderNumberText" xml:space="preserve">
+    <value>Deine Bestellnummer lautet</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
-  </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
-  </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
-  </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
-  </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="ThankYouHeader" xml:space="preserve">
+    <value>Danke für deine Bestellung!</value>
   </data>
 </root>

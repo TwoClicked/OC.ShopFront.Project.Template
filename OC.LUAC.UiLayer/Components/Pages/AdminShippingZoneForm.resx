@@ -117,31 +117,49 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Hello" xml:space="preserve">
-    <value>Hallo</value>
+  <data name="AddCountryButton" xml:space="preserve">
+    <value>+ Add</value>
   </data>
-  <data name="Nav_Account" xml:space="preserve">
-    <value>Konto</value>
+  <data name="AddZone" xml:space="preserve">
+    <value>Add Shipping Zone</value>
   </data>
-  <data name="Nav_Admin" xml:space="preserve">
-    <value>Admin</value>
+  <data name="BaseCost" xml:space="preserve">
+    <value>Base Cost (€)</value>
   </data>
-  <data name="Nav_Cart" xml:space="preserve">
-    <value>Warenkorb</value>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
-    <value>Startseite</value>
+  <data name="CountriesLabel" xml:space="preserve">
+    <value>Countries</value>
   </data>
-  <data name="Nav_LiveChat" xml:space="preserve">
-    <value>Live-Chat</value>
+  <data name="CountryCodePlaceholder" xml:space="preserve">
+    <value>Code (e.g. DE)</value>
   </data>
-  <data name="Nav_LoginRegister" xml:space="preserve">
-    <value>Anmelden / Registrieren</value>
+  <data name="CountryConflict" xml:space="preserve">
+    <value>⚠️ Country {0} is already assigned to zone '{1}'.</value>
   </data>
-  <data name="Nav_Logout" xml:space="preserve">
-    <value>Abmelden</value>
+  <data name="CountryNamePlaceholder" xml:space="preserve">
+    <value>Name (e.g. Germany)</value>
   </data>
-  <data name="Nav_Shop" xml:space="preserve">
-    <value>Shop</value>
+  <data name="DefaultZone" xml:space="preserve">
+    <value>Default Zone</value>
+  </data>
+  <data name="EditZone" xml:space="preserve">
+    <value>Edit Shipping Zone</value>
+  </data>
+  <data name="FreeShippingThreshold" xml:space="preserve">
+    <value>Free Shipping Threshold (€)</value>
+  </data>
+  <data name="LoadError" xml:space="preserve">
+    <value>⚠️ Failed to load data:</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SaveError" xml:space="preserve">
+    <value>⚠️ Failed to save zone:</value>
+  </data>
+  <data name="ZoneName" xml:space="preserve">
+    <value>Zone Name</value>
   </data>
 </root>
