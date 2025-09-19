@@ -1,16 +1,21 @@
-﻿using QuestPDF.Fluent;
+﻿// OC.LUAC.ServiceLayer/Utils/PdfGenerator.cs
+using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using OC.LUAC.ObjectLayer.Orders;
+using System.Globalization;
 
 namespace OC.LUAC.ServiceLayer.Utils
 {
     public static class PdfGenerator
     {
-        public static byte[] GenerateOrderPdf(Order order)
+        public static byte[] GenerateOrderPdf(Order order, PaymentInformation paymentInfo)
         {
             var lang = order.Language ?? "en";
             var t = Localization.T;
+
+            // force Euro formatting
+            var euro = new CultureInfo("de-DE");
 
             return Document.Create(container =>
             {
@@ -21,7 +26,13 @@ namespace OC.LUAC.ServiceLayer.Utils
                     page.DefaultTextStyle(x => x.FontSize(11));
 
                     // ========== HEADER ==========
-                    var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "LUAC_DESIGN.png");
+                    var logoPath = Path.Combine(
+                        Directory.GetCurrentDirectory(),
+                        "wwwroot",
+                        "images",
+                        "LUAC_DESIGN.png"
+                    );
+
                     page.Header().Row(row =>
                     {
                         row.ConstantItem(200)
@@ -87,7 +98,8 @@ namespace OC.LUAC.ServiceLayer.Utils
 
                                 static IContainer CellStyle(IContainer container)
                                 {
-                                    return container.PaddingVertical(5).BorderBottom(1).BorderColor(Colors.Black);
+                                    return container.PaddingVertical(5)
+                                        .BorderBottom(1).BorderColor(Colors.Black);
                                 }
                             });
 
@@ -96,8 +108,8 @@ namespace OC.LUAC.ServiceLayer.Utils
                                 var lineTotal = item.UnitPrice * item.Quantity;
                                 table.Cell().Element(Cell).Text($"{item.ProductName} ({item.Size})");
                                 table.Cell().Element(Cell).Text(item.Quantity.ToString());
-                                table.Cell().Element(Cell).Text($"{item.UnitPrice:C}");
-                                table.Cell().Element(Cell).Text($"{lineTotal:C}");
+                                table.Cell().Element(Cell).Text(item.UnitPrice.ToString("C", euro));
+                                table.Cell().Element(Cell).Text(lineTotal.ToString("C", euro));
                             }
 
                             // Subtotal + discount
@@ -105,49 +117,47 @@ namespace OC.LUAC.ServiceLayer.Utils
                             {
                                 table.Cell().ColumnSpan(3).Element(Cell).AlignRight().PaddingRight(10)
                                     .Text(t(lang, "Subtotal")).SemiBold();
-                                table.Cell().Element(Cell).Text($"{order.TotalBeforeDiscount:C}").SemiBold();
+                                table.Cell().Element(Cell).Text(order.TotalBeforeDiscount.ToString("C", euro)).SemiBold();
 
                                 table.Cell().ColumnSpan(3).Element(Cell).AlignRight().PaddingRight(10)
                                     .Text($"{t(lang, "Discount")} ({order.VoucherCode})").SemiBold();
-                                table.Cell().Element(Cell).Text($"-{order.DiscountAmount.Value:C}").SemiBold();
+                                table.Cell().Element(Cell).Text($"-{order.DiscountAmount.Value.ToString("C", euro)}").SemiBold();
                             }
 
                             // Shipping (always show, even if free)
                             table.Cell().ColumnSpan(3).Element(Cell).AlignRight().PaddingRight(10)
                                 .Text(t(lang, "Shipping")).SemiBold();
                             table.Cell().Element(Cell).Text(order.ShippingCost > 0
-                                ? $"{order.ShippingCost:C}"
+                                ? order.ShippingCost.ToString("C", euro)
                                 : t(lang, "Free")).SemiBold();
 
                             // Grand Total
                             table.Cell().ColumnSpan(3).Element(Cell).AlignRight().PaddingRight(10)
                                 .Text(t(lang, "GrandTotal")).SemiBold();
-                            table.Cell().Element(Cell).Text($"{order.TotalAfterDiscount:C}").SemiBold();
+                            table.Cell().Element(Cell).Text(order.TotalAfterDiscount.ToString("C", euro)).SemiBold();
 
                             static IContainer Cell(IContainer container)
                             {
-                                return container.PaddingVertical(5).BorderBottom(1).BorderColor(Colors.Grey.Lighten2);
+                                return container.PaddingVertical(5)
+                                    .BorderBottom(1).BorderColor(Colors.Grey.Lighten2);
                             }
+                        });
 
-                            //PAYMENT INFO
+                        // PAYMENT INFO (from config argument)
+                        col.Item().PaddingTop(20).Column(c =>
+                        {
+                            c.Item().Text(t(lang, "PaymentInformation")).SemiBold();
+                            c.Item().Text(t(lang, "PleaseTransfer"));
 
-                            col.Item().PaddingTop(20).Column(c =>
-                            {
-                                c.Item().Text(t(lang, "PaymentInformation")).SemiBold();
-                                c.Item().Text(t(lang, "PleaseTransfer"));
+                            c.Item().Text($"{t(lang, "AccountHolder")}: {paymentInfo.AccountHolder}");
+                            c.Item().Text($"{t(lang, "IBAN")}: {paymentInfo.IBAN}");
+                            c.Item().Text($"{t(lang, "BIC")}: {paymentInfo.BIC}");
+                            c.Item().Text($"{t(lang, "Bank")}: {paymentInfo.Bank}");
 
 
-                                c.Item().Text($"{t(lang, "AccountHolder")}: LUAC Store");
-                                c.Item().Text($"{t(lang, "IBAN")}: AWAITING DATA");
-                                c.Item().Text($"{t(lang, "BIC")}: AWAITING DATA");
-                                c.Item().Text($"{t(lang, "Bank")}: AWAITING DATA");
-
-                                c.Item().Text($"{t(lang, "Reference")}: {order.OrderNumber}");
-
-                                c.Item().PaddingTop(10).Text(t(lang, "ImportantNotice")).SemiBold();
-                                c.Item().Text(t(lang, "OrderProcessedAfterPayment"));
-                                c.Item().Text(t(lang, "OrderCancelledIfNoPayment"));
-                            });
+                            c.Item().PaddingTop(10).Text(t(lang, "ImportantNotice")).SemiBold();
+                            c.Item().Text(t(lang, "OrderProcessedAfterPayment"));
+                            c.Item().Text(t(lang, "OrderCancelledIfNoPayment"));
                         });
 
                         // Notes

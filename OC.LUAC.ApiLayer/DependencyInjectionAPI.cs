@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using OC.LUAC.ApiLayer.Auth;
-using OC.LUAC.ApiLayer.Storage;
 using OC.LUAC.ApiLayer.Startup;
+using OC.LUAC.ApiLayer.Storage;
+using OC.LUAC.ObjectLayer.Orders;
+using System.Text;
 
 namespace OC.LUAC.ApiLayer
 {
@@ -24,6 +25,10 @@ namespace OC.LUAC.ApiLayer
 
             // Token service
             services.AddSingleton<ITokenService, JwtTokenService>();
+
+            // Bind PaymentInformation section from appsettings.json
+            services.Configure<PaymentInformation>(config.GetSection("PaymentInformation"));
+
 
             // Authentication + Authorization
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

@@ -10,6 +10,7 @@ using OC.LUAC.ObjectLayer.Entities;
 using OC.LUAC.ObjectLayer.Orders;
 using OC.LUAC.ServiceLayer.Interfaces;
 using OC.LUAC.ServiceLayer.Utils;
+using System.Globalization;
 using System.Security.Claims;
 
 namespace OC.LUAC.ApiLayer.Controllers
@@ -27,6 +28,7 @@ namespace OC.LUAC.ApiLayer.Controllers
         private readonly IVoucherService _vouchers;
         private readonly IShippingZoneService _shippingZones;
         private readonly AppDbContext _context;
+        private readonly IConfiguration _config;
 
         public OrderController(
             IOrderService orders,
@@ -37,7 +39,8 @@ namespace OC.LUAC.ApiLayer.Controllers
             IEmailService emailService,
             IVoucherService voucherService,
             IShippingZoneService shippingService,
-            AppDbContext context)
+            AppDbContext context,
+            IConfiguration config)
         {
             _orders = orders;
             _stock = stock;
@@ -48,6 +51,7 @@ namespace OC.LUAC.ApiLayer.Controllers
             _vouchers = voucherService;
             _shippingZones = shippingService;
             _context = context;
+            _config = config;
         }
 
         // -------------------------------------------------
@@ -288,13 +292,18 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             var created = await _orders.CreateOrderAsync(order);
 
-            // ---- generate PDF & send confirmation email ----
-            var pdf = PdfGenerator.GenerateOrderPdf(created);
+            // get PaymentInformation from config
+            var paymentInfo = _config.GetSection("PaymentInformation").Get<PaymentInformation>();
+
+            // generate PDF
+            var pdf = PdfGenerator.GenerateOrderPdf(created, paymentInfo);
 
 
 
             var lang = created.Language ?? "en";
             var t = Localization.T;
+            var euro = new CultureInfo("de-DE");
+
 
             var subject = $"{t(lang, "OrderConfirmation")} - {created.OrderNumber}";
 
@@ -317,8 +326,8 @@ namespace OC.LUAC.ApiLayer.Controllers
               <tr>
                 <td>{item.ProductName} ({item.Size})</td>
                 <td>{item.Quantity}</td>
-                <td>{item.UnitPrice:C}</td>
-                <td>{lineTotal:C}</td>
+                <td>{item.UnitPrice.ToString("C", euro)}</td>
+                <td>{lineTotal.ToString("C", euro)}</td>
               </tr>";
             }
 
@@ -326,11 +335,11 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             if (created.DiscountAmount.HasValue && created.DiscountAmount.Value > 0)
             {
-                body += $@"<p><strong>{t(lang, "Subtotal")}:</strong> {created.TotalBeforeDiscount:C}</p>";
-                body += $@"<p><strong>{t(lang, "Discount")} ({created.VoucherCode}):</strong> -{created.DiscountAmount:C}</p>";
+                body += $@"<p><strong>{t(lang, "Subtotal")}:</strong> {created.TotalBeforeDiscount.ToString("C", euro)}</p>";
+                body += $@"<p><strong>{t(lang, "Discount")} ({created.VoucherCode}):</strong> -{created.DiscountAmount.Value.ToString("C", euro)}</p>";
             }
 
-            body += $@"<p><strong>{t(lang, "GrandTotal")}:</strong> {created.TotalAfterDiscount:C}</p>";
+            body += $@"<p><strong>{t(lang, "GrandTotal")}:</strong> {created.TotalAfterDiscount.ToString("C", euro)}</p>";
 
             body += $@"
             <p><strong>{t(lang, "ImportantNotice")}:</strong></p>
@@ -508,13 +517,15 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             var lang = order.Language ?? "en";
             var t = Localization.T;
+            var euro = new CultureInfo("de-DE"); // ✅ force Euro formatting
 
             var subject = $"{t(lang, "PaymentReceived")} - {order.OrderNumber}";
             var body = $@"
-                <p>{t(lang, "Hello")} {customer.FirstName},</p>
-                <p>{t(lang, "PaymentReceivedMessage")}</p>
-                <p><strong>{t(lang, "OrderNumber")}:</strong> {order.OrderNumber}</p>
-                <p>{t(lang, "ThankYou")}</p>";
+            <p>{t(lang, "Hello")} {customer.FirstName},</p>
+            <p>{t(lang, "PaymentReceivedMessage")}</p>
+            <p><strong>{t(lang, "OrderNumber")}:</strong> {order.OrderNumber}</p>
+            <p><strong>{t(lang, "GrandTotal")}:</strong> {order.TotalAfterDiscount.ToString("C", euro)}</p>
+            <p>{t(lang, "ThankYou")}</p>";
 
             await _emailService.SendEmailAsync(
                 to: customer.Email,
@@ -524,6 +535,7 @@ namespace OC.LUAC.ApiLayer.Controllers
 
             return Ok(new { id = order.Id, status = "Paid" });
         }
+
 
         // --- helpers ---
         private static string GenerateOrderNumber()
