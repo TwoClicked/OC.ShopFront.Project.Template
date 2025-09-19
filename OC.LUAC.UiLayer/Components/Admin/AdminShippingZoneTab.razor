@@ -3,42 +3,40 @@
 @inject NavigationManager Nav
 @inject AdminAuthService AdminAuth
 @inject IJSRuntime JS
+@inject Microsoft.Extensions.Localization.IStringLocalizer<AdminShippingZoneTab> L
 
-<h2 class="text-2xl font-bold mb-6 text-amber-600">Shipping Zones</h2>
-
+<h2 class="text-2xl font-bold mb-6 text-amber-600">@L["ShippingZonesTitle"]</h2>
 <!-- Toolbar -->
 <div class="flex justify-between items-center mb-4 space-x-4">
     <input type="text"
            @bind="searchTerm"
            @bind:event="oninput"
-           placeholder="Search zones..."
+           placeholder="@L["SearchZones"]"
            class="px-4 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400 placeholder-gray-500 w-1/3" />
-
     <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded"
             @onclick='() => Nav.NavigateTo("/admin/shipping-zones/create")'>
-        + Add Zone
+        @L["AddZoneButton"]
     </button>
 </div>
-
 @if (pagedZones == null)
 {
-    <p class="text-gray-400">Loading zones...</p>
+    <p class="text-gray-400">@L["LoadingZones"]</p>
 }
 else if (!pagedZones.Any())
 {
-    <p class="text-gray-400">No shipping zones found.</p>
+    <p class="text-gray-400">@L["NoShippingZones"]</p>
 }
 else
 {
     <table class="w-full text-center border-collapse">
         <thead class="bg-neutral-900 text-gray-400 uppercase text-xs">
             <tr>
-                <th class="px-3 py-2">Name</th>
-                <th class="px-3 py-2">Base Cost</th>
-                <th class="px-3 py-2">Free Shipping Threshold</th>
-                <th class="px-3 py-2">Default</th>
-                <th class="px-3 py-2">Countries</th>
-                <th class="px-3 py-2">Actions</th>
+                <th class="px-3 py-2">@L["Name"]</th>
+                <th class="px-3 py-2">@L["BaseCost"]</th>
+                <th class="px-3 py-2">@L["FreeShippingThreshold"]</th>
+                <th class="px-3 py-2">@L["Default"]</th>
+                <th class="px-3 py-2">@L["Countries"]</th>
+                <th class="px-3 py-2">@L["Actions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -48,7 +46,7 @@ else
                     <td class="px-3 py-2">@z.Name</td>
                     <td class="px-3 py-2">€@z.BaseCost</td>
                     <td class="px-3 py-2">€@z.FreeShippingThreshold</td>
-                    <td class="px-3 py-2">@(z.IsDefault ? "✔️" : "-")</td>
+                    <td class="px-3 py-2">@(z.IsDefault? L["Check"] : "-")</td>
                     <td class="px-3 py-2">
                         @if (z.Countries.Any())
                         {
@@ -64,38 +62,36 @@ else
                     <td class="px-3 py-2 space-x-2">
                         <button class="text-amber-500 hover:underline"
                                 @onclick='() => Nav.NavigateTo($"/admin/shipping-zones/edit/{z.Id}")'>
-                            Edit
+                            @L["Edit"]
                         </button>
                         <button class="text-red-500 hover:underline"
                                 @onclick="() => ConfirmAndDelete(z.Id)">
-                            Delete
+                            @L["Delete"]
                         </button>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
-
     <!-- Pagination + Page Size -->
     <div class="flex flex-col items-center space-y-2 mt-4 text-sm text-amber-600">
         <div class="w-full flex justify-center">
             <select class="w-full max-w-xs px-3 py-1 rounded bg-neutral-800 border border-neutral-600 text-amber-600 text-center"
                     @onchange="OnPageSizeChanged">
-                <option value="8">8 per page</option>
-                <option value="16">16 per page</option>
-                <option value="24">24 per page</option>
+                <option value="8">8 @L["PerPage"]</option>
+                <option value="16">16 @L["PerPage"]</option>
+                <option value="24">24 @L["PerPage"]</option>
             </select>
         </div>
-
         <div class="w-full max-w-xs flex items-center justify-between">
             <button @onclick="PrevPage" disabled="@(!CanPrevPage)"
                     class="px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
-                Previous
+                @L["Previous"]
             </button>
-            <span class="text-amber-600">Page @currentPage of @totalPages</span>
+            <span class="text-amber-600">@L["PageOf", currentPage, totalPages]</span>
             <button @onclick="NextPage" disabled="@(!CanNextPage)"
                     class="px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
-                Next
+                @L["Next"]
             </button>
         </div>
     </div>
