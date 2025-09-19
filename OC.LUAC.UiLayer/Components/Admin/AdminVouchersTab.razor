@@ -4,50 +4,47 @@
 @inject AdminAuthService AdminAuth
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject Microsoft.Extensions.Localization.IStringLocalizer<AdminVouchersTab> L
 
-<h2 class="text-2xl font-bold mb-6 text-amber-600">Vouchers</h2>
-
+<h2 class="text-2xl font-bold mb-6 text-amber-600">@L["VouchersTitle"]</h2>
 <!-- Toolbar -->
 <div class="flex justify-between items-center mb-4 space-x-4">
     <input type="text"
            @bind="searchTerm"
            @bind:event="oninput"
-           placeholder="Search vouchers..."
+           placeholder="@L["SearchVouchers"]"
            class="px-4 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400 placeholder-gray-500 w-1/3" />
-
     <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400"
             @onchange="OnStatusChanged">
-        <option value="">All Status</option>
-        <option value="true">Active</option>
-        <option value="false">Inactive</option>
+        <option value="">@L["AllStatus"]</option>
+        <option value="true">@L["Active"]</option>
+        <option value="false">@L["Inactive"]</option>
     </select>
-
     <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded"
             @onclick='() => Nav.NavigateTo("/admin/vouchers/new")'>
-        + Add Voucher
+        @L["AddVoucherButton"]
     </button>
 </div>
-
 @if (pagedVouchers == null)
 {
-    <p class="text-gray-400">Loading vouchers...</p>
+    <p class="text-gray-400">@L["LoadingVouchers"]</p>
 }
 else if (!pagedVouchers.Any())
 {
-    <p class="text-gray-400">No vouchers found.</p>
+    <p class="text-gray-400">@L["NoVouchers"]</p>
 }
 else
 {
     <table class="w-full text-center border-collapse">
         <thead class="bg-neutral-900 text-gray-400 uppercase text-xs">
             <tr>
-                <th class="px-3 py-2">Code</th>
-                <th class="px-3 py-2">Type</th>
-                <th class="px-3 py-2">Usage</th>
-                <th class="px-3 py-2">Remaining</th>
-                <th class="px-3 py-2">Expires</th>
-                <th class="px-3 py-2">Status</th>
-                <th class="px-3 py-2">Actions</th>
+                <th class="px-3 py-2">@L["Code"]</th>
+                <th class="px-3 py-2">@L["Type"]</th>
+                <th class="px-3 py-2">@L["Usage"]</th>
+                <th class="px-3 py-2">@L["Remaining"]</th>
+                <th class="px-3 py-2">@L["Expires"]</th>
+                <th class="px-3 py-2">@L["Status"]</th>
+                <th class="px-3 py-2">@L["Actions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -58,11 +55,11 @@ else
                     <td class="px-3 py-2">
                         @if (v.Percentage.HasValue)
                         {
-                            <span>@v.Percentage% Off</span>
+                            <span>@L["PercentageOff", v.Percentage]</span>
                         }
                         else if (v.FixedAmount.HasValue)
                         {
-                            <span>@v.FixedAmount.Value.("C", new System.Globalization.CultureInfo("de-DE")) Off</span>
+                            <span>@L["FixedOff", v.FixedAmount.Value.ToString("C", new System.Globalization.CultureInfo("de-DE"))]</span>
                         }
                         else
                         {
@@ -70,7 +67,7 @@ else
                         }
                         @if (v.AppliesToShipping)
                         {
-                            <span class="ml-1 text-amber-500">(Free Ship)</span>
+                            <span class="ml-1 text-amber-500">(@L["FreeShip"])</span>
                         }
                     </td>
                     <td class="px-3 py-2">@v.CurrentUsageCount / @(v.MaxUsageCount?.ToString() ?? "∞")</td>
@@ -79,53 +76,50 @@ else
                     <td class="px-3 py-2">
                         @if (v.IsActive)
                         {
-                            <span class="text-green-400">Active</span>
+                            <span class="text-green-400">@L["Active"]</span>
                         }
                         else
                         {
-                            <span class="text-red-600">Inactive</span>
+                            <span class="text-red-600">@L["Inactive"]</span>
                         }
                     </td>
                     <td class="px-3 py-2 space-x-2">
                         <button class="text-amber-500 hover:underline"
                                 @onclick='() => Nav.NavigateTo($"/admin/vouchers/edit/{v.Id}")'>
-                            Edit
+                            @L["Edit"]
                         </button>
                         <button class="text-red-500 hover:underline"
                                 @onclick="() => ConfirmAndDelete(v.Id)">
-                            Delete
+                            @L["Delete"]
                         </button>
                         <button class="text-gray-400 hover:underline"
                                 @onclick="() => ToggleVoucher(v.Id)">
-                            @(v.IsActive ? "Deactivate" : "Activate")
+                            @(v.IsActive? L["Deactivate"] : L["Activate"])
                         </button>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
-
     <!-- Pagination -->
     <div class="flex flex-col items-center space-y-2 mt-4 text-sm text-amber-600">
-
         <div class="w-full flex justify-center">
             <select class="w-full max-w-xs px-3 py-1 rounded bg-neutral-800 border border-neutral-600 text-amber-600 text-center"
                     @onchange="OnPageSizeChanged">
-                <option value="8">8 per page</option>
-                <option value="16">16 per page</option>
-                <option value="24">24 per page</option>
+                <option value="8">8 @L["PerPage"]</option>
+                <option value="16">16 @L["PerPage"]</option>
+                <option value="24">24 @L["PerPage"]</option>
             </select>
         </div>
-
         <div class="w-full max-w-xs flex items-center justify-between">
             <button @onclick="PrevPage" disabled="@(!CanPrevPage)"
                     class="px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
-                Previous
+                @L["Previous"]
             </button>
-            <span class="text-amber-600">Page @currentPage of @totalPages</span>
+            <span class="text-amber-600">@L["PageOf", currentPage, totalPages]</span>
             <button @onclick="NextPage" disabled="@(!CanNextPage)"
                     class="px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
-                Next
+                @L["Next"]
             </button>
         </div>
     </div>
