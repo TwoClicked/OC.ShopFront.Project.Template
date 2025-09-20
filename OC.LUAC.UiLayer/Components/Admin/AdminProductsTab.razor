@@ -14,15 +14,15 @@
            @bind="searchTerm"
            @bind:event="oninput"
            placeholder="@L["SearchProducts"]"
-           class="px-4 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400 placeholder-gray-500 w-1/3" />
-    <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400"
+           class="px-4 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-600 placeholder-gray-500 w-1/3" />
+    <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-600"
             @onchange="OnCategoryChanged">
         <option value="">@L["AllCategories"]</option>
         <option value="Pullovers">@L["Pullovers"]</option>
         <option value="T-Shirts">@L["TShirts"]</option>
         <option value="Accesories">@L["Accessories"]</option>
     </select>
-    <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-400"
+    <select class="px-3 py-2 rounded-md bg-neutral-800 border border-neutral-600 text-amber-600"
             @onchange="OnFeaturedChanged">
         <option value="">@L["AllProducts"]</option>
         <option value="true">@L["FeaturedOnly"]</option>

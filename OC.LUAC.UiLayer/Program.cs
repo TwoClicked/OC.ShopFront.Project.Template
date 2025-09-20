@@ -4,6 +4,7 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.FileProviders;
 using System.Globalization;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,12 @@ if (string.IsNullOrEmpty(apiBaseUrl))
 {
     throw new InvalidOperationException("ApiBaseUrl is not configured in appsettings.json");
 }
+
+// 🔹 Log environment + API base URL
+Console.WriteLine("=========================================");
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"ApiBaseUrl: {apiBaseUrl}");
+Console.WriteLine("=========================================");
 
 builder.Services.AddTransient<CultureHttpMessageHandler>();
 builder.Services.AddHttpClient("ApiClient", client =>

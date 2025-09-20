@@ -6,6 +6,11 @@ using OC.LUAC.ServiceLayer;
 using QuestPDF.Infrastructure;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
+using Microsoft.EntityFrameworkCore;
+using OC.LUAC.DataLayer;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Localization.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +34,7 @@ builder.Services
 // SignalR
 builder.Services.AddSignalR();
 
-// Swagger
+// Swagger (enabled everywhere 🚀)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -56,26 +61,23 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ✅ CORS (allow Accept-Language)
+// ✅ CORS (restrict to UI domain in production)
 builder.Services.AddCors(o =>
-    o.AddPolicy("dev", p => p
-        .AllowAnyOrigin()
+    o.AddPolicy("prod", p => p
+        .WithOrigins("https://luac-ui-win.azurewebsites.net") // UI App Service domain
         .AllowAnyMethod()
         .AllowAnyHeader()
-        .WithExposedHeaders("Content-Language") // optional: allow client to see culture response
+        .WithExposedHeaders("Content-Language")
     )
 );
 
 // ✅ Localization
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-
 var supportedCultures = new[] { "en", "de" };
 var localizationOptions = new RequestLocalizationOptions()
     .SetDefaultCulture("en")
     .AddSupportedCultures(supportedCultures)
     .AddSupportedUICultures(supportedCultures);
-
-// Use Accept-Language as culture provider
 localizationOptions.RequestCultureProviders = new List<IRequestCultureProvider>
 {
     new AcceptLanguageHeaderRequestCultureProvider()
@@ -83,21 +85,41 @@ localizationOptions.RequestCultureProviders = new List<IRequestCultureProvider>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// ✅ Log DB info on startup (no passwords)
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var conn = db.Database.GetDbConnection();
+    Console.WriteLine($"[Startup] Connected to DB: {conn.Database} on {conn.DataSource}");
 }
 
+// ✅ Swagger always on (consider securing in prod)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "LUAC API v1");
+    c.RoutePrefix = "swagger";
+});
+
+// ✅ Global error logging middleware
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ Request exception: " + ex.ToString());
+        throw;
+    }
+});
+
 app.UseHttpsRedirection();
-
-// Static files
 app.UseStaticFiles();
+app.UseCors("prod");
 
-// ✅ Ensure CORS runs BEFORE localization
-app.UseCors("dev");
-
-// ✅ Debug raw header BEFORE localization resolves
+// Debug Accept-Language header
 app.Use(async (context, next) =>
 {
     Console.WriteLine("[API] Raw Accept-Language header: " +
@@ -105,10 +127,10 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// ✅ Apply localization
+// Apply localization
 app.UseRequestLocalization(localizationOptions);
 
-// ✅ Debug resolved culture
+// Debug resolved culture
 app.Use(async (context, next) =>
 {
     var feature = context.Features.Get<IRequestCultureFeature>();
@@ -116,11 +138,29 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Auth pipeline
+// Auth
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<ChatHub>("/chathub");
 
-app.Run();
+// ✅ Catch startup SQL errors
+try
+{
+    app.Run();
+}
+catch (SqlException ex)
+{
+    Console.WriteLine($"❌ SQL Error {ex.Number}: {ex.Message}");
+    foreach (SqlError err in ex.Errors)
+    {
+        Console.WriteLine($"  -> {err.Message} (Line {err.LineNumber}, State {err.State}, Class {err.Class})");
+    }
+    throw;
+}
+catch (Exception ex)
+{
+    Console.WriteLine("❌ Unhandled exception at startup: " + ex);
+    throw;
+}

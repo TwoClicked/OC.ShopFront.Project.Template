@@ -71,7 +71,7 @@ namespace OC.LUAC.ApiLayer
             services.AddAuthorization();
 
             // Register the seeding hosted service (runs once on startup)
-            services.AddHostedService<AdminSeedHostedService>();
+            //services.AddHostedService<AdminSeedHostedService>();
 
             return services;
         }

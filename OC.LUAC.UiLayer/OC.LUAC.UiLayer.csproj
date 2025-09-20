@@ -4,9 +4,12 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Allow publish to continue even if duplicate files like appsettings.*.json exist -->
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Keep ApiLayer reference for now so code compiles -->
     <ProjectReference Include="..\OC.LUAC.ApiLayer\OC.LUAC.ApiLayer.csproj" />
     <ProjectReference Include="..\OC.LUAC.ObjectLayer\OC.LUAC.ObjectLayer.csproj" />
   </ItemGroup>

@@ -148,7 +148,7 @@
     <value>Nachricht eingeben...</value>
   </data>
   <data name="WelcomeMessage" xml:space="preserve">
-    <value>Vielen Dank, dass du uns kontaktiert hast. Ein Admin wird deine Nachricht prüfen und sich innerhalb von 24 Stunden bei dir melden. Bitte beschreibe dein Anliegen so detailliert wie möglich, damit wir dir effektiv helfen können.</value>
+    <value>Vielen Dank, dass Du uns kontaktiert hast. Ein Admin wird Deine Nachricht prüfen und sich innerhalb von 24 Stunden bei Dir melden. Bitte beschreibe Dein Anliegen so detailliert wie möglich, damit wir Dir effektiv helfen können.</value>
   </data>
   <data name="You" xml:space="preserve">
     <value>Du</value>
