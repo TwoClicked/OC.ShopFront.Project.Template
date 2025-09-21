@@ -1,4 +1,5 @@
 ﻿@page "/admin/products/new"
+@using OC.LUAC.ApiLayer.DTO.Category
 @using OC.LUAC.UiLayer.DTO.Products
 @inject HttpClient Http
 @inject AdminAuthService AdminAuth
@@ -49,9 +50,10 @@
                 <label class="block text-gray-300">@L["Category"]</label>
                 <InputSelect @bind-Value="model.CategoryId" class="w-full p-2 rounded bg-neutral-800 border border-neutral-600 text-white">
                     <option value="">@L["SelectCategory"]</option>
-                    <option value="1">@L["TShirts"]</option>
-                    <option value="2">@L["Pullovers"]</option>
-                    <option value="3">@L["Accessories"]</option>
+                    @foreach (var cat in categories)
+                    {
+                        <option value="@cat.Id">@cat.Name_en</option>
+                    }
                 </InputSelect>
                 <ValidationMessage For="@(() => model.CategoryId)" />
             </div>
@@ -147,6 +149,19 @@ else
     private bool productCreated = false;
     private int createdProductId = 0;
     private List<ProductImageDto> images = new();
+    private List<CategoryDto> categories = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            categories = await Http.GetFromJsonAsync<List<CategoryDto>>("categories");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load categories: " + ex.Message);
+        }
+    }
 
     private async Task HandleValidSubmit()
     {
