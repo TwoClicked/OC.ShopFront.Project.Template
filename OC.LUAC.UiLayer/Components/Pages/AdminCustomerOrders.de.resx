@@ -123,6 +123,9 @@
   <data name="BackToCustomers" xml:space="preserve">
     <value>Zurück zu Kunden</value>
   </data>
+  <data name="BackToOrders" xml:space="preserve">
+    <value>Zurück zu den Bestellungen</value>
+  </data>
   <data name="Cancel" xml:space="preserve">
     <value>Stornieren</value>
   </data>
@@ -166,7 +169,7 @@
     <value>Bestellnummer</value>
   </data>
   <data name="OrdersFor" xml:space="preserve">
-    <value>Bestellungen für</value>
+    <value>Bestellungen für </value>
   </data>
   <data name="PageOf" xml:space="preserve">
     <value>Seite {0} von {1}</value>

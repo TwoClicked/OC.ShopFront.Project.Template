@@ -10,19 +10,27 @@
 <html lang="@culture">
 <head>
     <meta charset="utf-8" />
+    <!-- ✅ makes site scale correctly on mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <base href="/" />
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="OC.LUAC.UiLayer.styles.css" />
-    <link rel="stylesheet" href="css/output.css" />   <!-- ✅ Tailwind CSS -->
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="css/output.css" />   <!-- Tailwind CSS -->
+    <link rel="icon" type="image/png" href="/images/ICON_LOGO.png" />
+
+    <!-- Flatpickr styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
-<body>
+<body class="overflow-x-hidden">
+    <!-- ✅ stops white bars -->
     <Routes @rendermode="InteractiveServer" />
 
+    <!-- Culture init -->
     <script>
-        (function() {
+        (function () {
             var culture = localStorage.getItem('culture');
             if (culture) {
                 // set ASP.NET Core culture cookie
@@ -35,8 +43,29 @@
         })();
     </script>
 
+    <!-- Flatpickr init helper -->
+    <script>
+        window.initFlatpickr = function () {
+            if (window.flatpickr) {
+                // Start Date
+                if (document.querySelector("#startDate") && !document.querySelector("#startDate")._flatpickr) {
+                    flatpickr("#startDate", {
+                        dateFormat: "Y-m-d"
+                    });
+                }
+                // End Date
+                if (document.querySelector("#endDate") && !document.querySelector("#endDate")._flatpickr) {
+                    flatpickr("#endDate", {
+                        dateFormat: "Y-m-d"
+                    });
+                }
+            }
+        };
+    </script>
+
+    <!-- Flatpickr script -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
     <script src="_framework/blazor.server.js"></script>
-
-
 </body>
 </html>

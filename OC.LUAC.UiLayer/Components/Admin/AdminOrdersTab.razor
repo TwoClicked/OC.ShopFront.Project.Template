@@ -1,0 +1,207 @@
+﻿@using OC.LUAC.ApiLayer.DTO.Order
+@inject HttpClient Http
+@inject AdminAuthService AdminAuth
+@inject NavigationManager Nav
+@inject Microsoft.Extensions.Localization.IStringLocalizer<AdminOrdersTab> L
+@using System.Globalization
+@using OC.LUAC.UiLayer.DTO.Order
+
+<div class="max-w-5xl mx-auto space-y-6 flex flex-col items-center">
+    <!-- Search -->
+    <div class="w-full flex justify-center py-3">
+        <input type="text"
+               @bind="searchTerm"
+               @bind:event="oninput"
+               placeholder="@L["SearchByEmailOrName"]"
+               class="w-1/3 px-4 py-3 rounded-md bg-neutral-800 border border-neutral-600 text-amber-600 placeholder-gray-500" />
+    </div>
+
+    <!-- Orders Table (Grouped by Customer) -->
+    <div class="w-full flex justify-center">
+        <table class="max-w-4xl w-full text-left text-sm border border-neutral-800 rounded-lg overflow-hidden">
+            <thead class="bg-neutral-800 text-amber-600 uppercase text-xs">
+                <tr>
+                    <th class="px-4 py-3">@L["FirstName"]</th>
+                    <th class="px-4 py-3">@L["LastName"]</th>
+                    <th class="px-4 py-3">@L["Email"]</th>
+                    <th class="px-4 py-3">@L["PendingPayment"]</th>
+                    <th class="px-4 py-3">@L["Processing"]</th>
+                    <th class="px-4 py-3 text-right">@L["Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (pagedCustomers.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-6 text-gray-500">
+                            @L["NoOrders"]
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var c in pagedCustomers)
+                    {
+                        <tr class="border-b border-neutral-700 hover:bg-neutral-800">
+                            <td class="px-4 py-3">@c.FirstName</td>
+                            <td class="px-4 py-3">@c.LastName</td>
+                            <td class="px-4 py-3">@c.Email</td>
+                            <td class="px-4 py-3">
+                                @((MarkupString)(c.PendingCount > 0
+                                                        ? $"<span class='font-semibold'>{c.PendingCount}</span>"
+                                                        : "-"))
+                                                           </td>
+                                                           <td class="px-4 py-3">
+                                @((MarkupString)(c.ProcessingCount > 0
+                                                        ? $"<span class='font-semibold'>{c.ProcessingCount}</span>"
+                                                        : "-"))
+                    </td>
+                    <td class="px-4 py-3 text-right space-x-2">
+                        <button class="bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded text-sm"
+                                @onclick="() => ViewOrders(c.CustomerId)">
+                            @L["ViewOrders"]
+                        </button>
+                    </td>
+                </tr>
+                                }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination + Page Size -->
+    <div class="flex flex-col items-center space-y-2 mt-4 text-sm text-amber-600">
+        <div class="w-full flex justify-center">
+            <select class="w-full max-w-xs px-3 py-1 rounded bg-neutral-800 border border-neutral-600 text-amber-600 text-center"
+                    @onchange="OnPageSizeChanged">
+                <option value="8">8 @L["PerPage"]</option>
+                <option value="16">16 @L["PerPage"]</option>
+                <option value="24">24 @L["PerPage"]</option>
+            </select>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button @onclick="PrevPage" disabled="@(!CanPrevPage)"
+                    class="w-24 px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                @L["Previous"]
+            </button>
+            <span class="text-amber-600">@L["PageOf", currentPage, totalPages]</span>
+            <button @onclick="NextPage" disabled="@(!CanNextPage)"
+                    class="w-24 px-3 py-1 text-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50">
+                @L["Next"]
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<CustomerOrderView> allCustomers = new();
+    private List<CustomerOrderView> pagedCustomers = new();
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value ?? string.Empty;
+            currentPage = 1;
+            ApplyFilters();
+        }
+    }
+
+    private int currentPage = 1;
+    private int pageSize = 8;
+    private int totalPages = 1;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadOrders();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadOrders()
+    {
+        var token = await AdminAuth.GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var orders = await Http.GetFromJsonAsync<List<AdminOrderDto>>("orders/admin/open") ?? new();
+
+            // Group by customer
+            allCustomers = orders
+                .GroupBy(o => new { o.CustomerId, o.CustomerEmail, o.CustomerFirstName, o.CustomerLastName })
+                .Select(g => new CustomerOrderView
+                {
+                    CustomerId = g.Key.CustomerId,
+                    Email = g.Key.CustomerEmail,
+                    FirstName = g.Key.CustomerFirstName,
+                    LastName = g.Key.CustomerLastName,
+                    PendingCount = g.Count(o => o.Status == "PendingPayment"),
+                    ProcessingCount = g.Count(o => o.Status == "Processing")
+                })
+                .ToList();
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("⚠️ Failed to load orders: " + ex.Message);
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = string.IsNullOrWhiteSpace(searchTerm)
+            ? allCustomers
+            : allCustomers.Where(c =>
+                c.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+
+        totalPages = (int)Math.Ceiling(filtered.Count / (double)pageSize);
+        if (currentPage > totalPages) currentPage = totalPages == 0 ? 1 : totalPages;
+
+        pagedCustomers = filtered
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            pageSize = size;
+            currentPage = 1;
+            ApplyFilters();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (currentPage > 1) currentPage--;
+        ApplyFilters();
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages) currentPage++;
+        ApplyFilters();
+    }
+
+    private void ViewOrders(int customerId)
+    {
+        Nav.NavigateTo($"/admin/customers/{customerId}/orders");
+    }
+
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < totalPages;
+
+
+}

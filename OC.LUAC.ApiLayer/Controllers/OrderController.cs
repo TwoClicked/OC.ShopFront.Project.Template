@@ -58,6 +58,35 @@ namespace OC.LUAC.ApiLayer.Controllers
         // READ ENDPOINTS
         // -------------------------------------------------
 
+
+        // GET /api/orders/admin/open
+        [HttpGet("admin/open")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<IEnumerable<AdminOrderDto>>> GetOpenOrdersForAdmin()
+        {
+            var orders = await _orders.GetAllOrdersAsync();
+
+            var openOrders = orders
+                .Where(o => o.Status == OrderStatus.PendingPayment || o.Status == OrderStatus.Processing)
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => new AdminOrderDto
+                {
+                    Id = o.Id,
+                    OrderNumber = o.OrderNumber,
+                    CreatedAt = o.CreatedAt,
+                    Status = o.Status.ToString(),
+                    TotalAfterDiscount = o.TotalAfterDiscount,
+                    CustomerId = o.Customer?.Id ?? 0,
+                    CustomerEmail = o.Customer?.Email ?? string.Empty,
+                    CustomerFirstName = o.Customer?.FirstName ?? string.Empty,
+                    CustomerLastName = o.Customer?.LastName ?? string.Empty
+                })
+                .ToList();
+
+            return Ok(openOrders);
+        }
+
+
         // GET /api/orders/{id}
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(OrderSummaryDto), 200)]

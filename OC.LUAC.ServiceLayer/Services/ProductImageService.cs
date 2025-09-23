@@ -39,16 +39,16 @@ namespace OC.LUAC.ServiceLayer.Services
             await _context.SaveChangesAsync();
             return image;
         }
-       
+
         public async Task<bool> DeleteImageAsync(int imageId)
         {
             var existing = await _context.ProductImages.FirstOrDefaultAsync(i => i.Id == imageId);
             if (existing == null) return false;
 
-            existing.IsDeleted = true;
-            existing.DeletedAt = DateTime.UtcNow;
+            _context.ProductImages.Remove(existing);
             await _context.SaveChangesAsync();
             return true;
         }
+
     }
 }

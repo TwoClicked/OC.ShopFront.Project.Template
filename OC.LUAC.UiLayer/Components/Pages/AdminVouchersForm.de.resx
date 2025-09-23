@@ -142,7 +142,7 @@
     <value>Gutschein konnte nicht geladen werden.</value>
   </data>
   <data name="MaxUsageCountLabel" xml:space="preserve">
-    <value>Gutschein konnte nicht gespeichert werden</value>
+    <value>Maximale Nutzungsanzahl</value>
   </data>
   <data name="PercentageDiscountLabel" xml:space="preserve">
     <value>Prozentualer Rabatt</value>

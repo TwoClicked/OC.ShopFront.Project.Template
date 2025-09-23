@@ -7,10 +7,20 @@
 
 @if (!started)
 {
-    <button @onclick="StartSession"
-            class="bg-amber-600 text-white px-4 py-2 rounded">
-        @L["StartChat"]
-    </button>
+    @if (hasActiveChat)
+    {
+        <button @onclick="ResumeSession"
+                class="bg-green-600 text-white px-4 py-2 rounded">
+            @resumeButtonLabel
+        </button>
+    }
+    else
+    {
+        <button @onclick="StartSession"
+                class="bg-amber-600 text-white px-4 py-2 rounded">
+            @L["StartChat"]
+        </button>
+    }
 }
 else
 {
@@ -18,9 +28,9 @@ else
         @foreach (var msg in messages)
         {
             <div class="mb-2 @(msg.IsSystem
-                                                 ? "text-gray-400"
-                                                 : msg.IsFromCustomer ? "text-amber-600" : "text-green-400")">
-                                                                                                           <strong>
+                                                  ? "text-gray-400"
+                                                  : msg.IsFromCustomer ? "text-amber-600" : "text-green-400")">
+                                                                                                            <strong>
                     @(msg.IsSystem
                                 ? "[System]"
                                 : msg.IsFromCustomer ? L["You"] : L["Admin"]):
@@ -58,6 +68,9 @@ else
     private readonly List<ChatVm> messages = new();
     private bool initialized = false;
     private string? token;
+
+    private bool hasActiveChat = false;
+    private string resumeButtonLabel = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -109,31 +122,18 @@ else
                 }
             };
 
-            // Load existing session + history
+            // 🔎 Check if user already has a chat session
             try
             {
-                sessionId = await ChatClient.StartSessionAsync(token);
-                started = true;
-                sessionClosed = false;
-
-                // Add system message when session starts
-                messages.Add(new ChatVm
-                {
-                    Text = $"💬 {L["WelcomeMessage"]}",
-                    IsSystem = true
-                });
-
                 var history = await ChatClient.GetMyMessagesAsync(token);
-                if (history != null)
+                if (history != null && history.Any())
                 {
-                    foreach (var h in history)
-                    {
-                        messages.Add(new ChatVm
-                        {
-                            Text = h.Message,
-                            IsFromCustomer = h.IsFromCustomer
-                        });
-                    }
+                    hasActiveChat = true;
+
+                    var last = history.Last();
+                    resumeButtonLabel = last.IsFromCustomer
+                        ? L["ResumeChat"]
+                        : L["AdminHasReplied"];
                 }
             }
             catch (Exception ex)
@@ -152,18 +152,35 @@ else
     private async Task StartSession()
     {
         if (string.IsNullOrWhiteSpace(token))
+        {
+            messages.Add(new ChatVm { Text = $"⚠️ {L["MustBeLoggedIn"]}", IsSystem = true });
             return;
+        }
 
         sessionId = await ChatClient.StartSessionAsync(token);
         started = true;
         sessionClosed = false;
 
-        // Add system message right when chat starts
         messages.Add(new ChatVm
         {
-            Text = $"💬 {L["AdminWillJoinSoon"]}",
+            Text = $"💬 {L["AdminWillCheck24h"]}",
             IsSystem = true
         });
+
+        StateHasChanged();
+    }
+
+    private async Task ResumeSession()
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            messages.Add(new ChatVm { Text = $"⚠️ {L["MustBeLoggedIn"]}", IsSystem = true });
+            return;
+        }
+
+        sessionId = await ChatClient.StartSessionAsync(token);
+        started = true;
+        sessionClosed = false;
 
         var history = await ChatClient.GetMyMessagesAsync(token);
         if (history != null)

@@ -117,73 +117,43 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Accessories" xml:space="preserve">
-    <value>Accessories</value>
+  <data name="Actions" xml:space="preserve">
+    <value>Aktionen</value>
   </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>Cancel</value>
+  <data name="Email" xml:space="preserve">
+    <value>E-Mail</value>
   </data>
-  <data name="Category" xml:space="preserve">
-    <value>Category</value>
+  <data name="FirstName" xml:space="preserve">
+    <value>Vorname</value>
   </data>
-  <data name="Delete" xml:space="preserve">
-    <value>Delete</value>
+  <data name="LastName" xml:space="preserve">
+    <value>Nachname</value>
   </data>
-  <data name="DescriptionDe" xml:space="preserve">
-    <value>Description (DE)</value>
+  <data name="Next" xml:space="preserve">
+    <value>Weiter</value>
   </data>
-  <data name="DescriptionEn" xml:space="preserve">
-    <value>Description (EN)</value>
+  <data name="NoOrders" xml:space="preserve">
+    <value>Keine Bestellungen gefunden</value>
   </data>
-  <data name="FeaturedProductLabel" xml:space="preserve">
-    <value>Featured Product</value>
+  <data name="PageOf" xml:space="preserve">
+    <value>Seite {0} von {1}</value>
   </data>
-  <data name="LoadingProduct" xml:space="preserve">
-    <value>Loading product...</value>
+  <data name="PendingPayment" xml:space="preserve">
+    <value>Ausstehende Zahlung</value>
   </data>
-  <data name="NameDe" xml:space="preserve">
-    <value>Name (DE)</value>
+  <data name="PerPage" xml:space="preserve">
+    <value>pro Seite</value>
   </data>
-  <data name="NameEn" xml:space="preserve">
-    <value>Name (EN)</value>
+  <data name="Previous" xml:space="preserve">
+    <value>Zurück</value>
   </data>
-  <data name="Price" xml:space="preserve">
-    <value>Price</value>
+  <data name="Processing" xml:space="preserve">
+    <value>In Bearbeitung</value>
   </data>
-  <data name="ProductImages" xml:space="preserve">
-    <value>Product Images</value>
+  <data name="SearchByEmailOrName" xml:space="preserve">
+    <value>Nach E-Mail suchen...</value>
   </data>
-  <data name="ProductNotFound" xml:space="preserve">
-    <value>Product not found.</value>
-  </data>
-  <data name="Pullovers" xml:space="preserve">
-    <value>Pullovers</value>
-  </data>
-  <data name="SaveChanges" xml:space="preserve">
-    <value>Save Changes</value>
-  </data>
-  <data name="Saving" xml:space="preserve">
-    <value>Saving...</value>
-  </data>
-  <data name="SetAsThumbnail" xml:space="preserve">
-    <value>Set as Thumbnail</value>
-  </data>
-  <data name="Size" xml:space="preserve">
-    <value>Size</value>
-  </data>
-  <data name="Stock" xml:space="preserve">
-    <value>Stock</value>
-  </data>
-  <data name="Thumbnail" xml:space="preserve">
-    <value>Thumbnail</value>
-  </data>
-  <data name="Title" xml:space="preserve">
-    <value>Edit Product</value>
-  </data>
-  <data name="TShirts" xml:space="preserve">
-    <value>T-Shirts</value>
-  </data>
-  <data name="VariantsStock" xml:space="preserve">
-    <value>Variants &amp; Stock</value>
+  <data name="ViewOrders" xml:space="preserve">
+    <value>Bestellungen ansehen</value>
   </data>
 </root>

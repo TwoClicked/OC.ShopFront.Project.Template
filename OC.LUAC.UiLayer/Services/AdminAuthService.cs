@@ -37,7 +37,7 @@ namespace OC.LUAC.UiLayer.Services
 
             if (role != "Admin" && result.Role != "Admin") return false;
 
-            await _localStorage.SetItemAsync(TokenKey, result.Token);
+            await SafeSetItemAsync(TokenKey, result.Token);
 
             OnAuthStateChanged?.Invoke();
             return true;
@@ -48,7 +48,7 @@ namespace OC.LUAC.UiLayer.Services
         // ====================
         public async Task LogoutAsync()
         {
-            await _localStorage.RemoveItemAsync(TokenKey);
+            await SafeRemoveItemAsync(TokenKey);
             OnAuthStateChanged?.Invoke();
         }
 
@@ -57,7 +57,7 @@ namespace OC.LUAC.UiLayer.Services
         // ====================
         public async Task<bool> IsLoggedInAsync()
         {
-            var token = await _localStorage.GetItemAsync<string>(TokenKey);
+            var token = await SafeGetItemAsync<string>(TokenKey);
             Console.WriteLine("🔑 AdminAuthService.IsLoggedInAsync called");
             Console.WriteLine($"Token found? {(string.IsNullOrEmpty(token) ? "No" : "Yes")}");
 
@@ -80,9 +80,47 @@ namespace OC.LUAC.UiLayer.Services
             return isAdmin;
         }
 
-
-
         public async Task<string?> GetTokenAsync() =>
-            await _localStorage.GetItemAsync<string>(TokenKey);
+            await SafeGetItemAsync<string>(TokenKey);
+
+        // ====================
+        // SAFE LOCAL STORAGE ACCESS
+        // ====================
+        private async Task<T?> SafeGetItemAsync<T>(string key)
+        {
+            try
+            {
+                return await _localStorage.GetItemAsync<T>(key);
+            }
+            catch (InvalidOperationException)
+            {
+                // JS not ready (likely prerendering)
+                return default;
+            }
+        }
+
+        private async Task SafeSetItemAsync<T>(string key, T value)
+        {
+            try
+            {
+                await _localStorage.SetItemAsync(key, value);
+            }
+            catch (InvalidOperationException)
+            {
+                // Ignore if JS not available
+            }
+        }
+
+        private async Task SafeRemoveItemAsync(string key)
+        {
+            try
+            {
+                await _localStorage.RemoveItemAsync(key);
+            }
+            catch (InvalidOperationException)
+            {
+                // Ignore if JS not available
+            }
+        }
     }
 }

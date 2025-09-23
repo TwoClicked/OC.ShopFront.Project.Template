@@ -40,13 +40,16 @@
         case "Stock":
             <AdminStockTab />
             break;
+        case "Orders":
+            <AdminOrdersTab />
+            break;
     }
 </div>
 @code {
     private string activeTab = "Dashboard";
     private readonly List<string> tabs = new()
     {
-        "Dashboard", "Customers", "Products", "Stock", "Vouchers", "ShippingZones", "Chat"
+        "Dashboard", "Customers","Orders", "Products", "Stock", "Vouchers", "ShippingZones", "Chat"
     };
     private void SetActiveTab(string tab) => activeTab = tab;
     protected override void OnInitialized()

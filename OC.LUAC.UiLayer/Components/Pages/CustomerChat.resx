@@ -117,11 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Admin" xml:space="preserve">
-    <value>Admin</value>
-  </data>
   <data name="AdminWillJoinSoon" xml:space="preserve">
-    <value>An admin will be with you shortly.</value>
+    <value>An admin will check your chat within 24 hours. Please describe your problem in as much detail as possible so we can assist you quickly.</value>
   </data>
   <data name="LiveChat" xml:space="preserve">
     <value>Live Chat</value>
@@ -147,10 +144,20 @@
   <data name="TypeMessage" xml:space="preserve">
     <value>Type a message...</value>
   </data>
-  <data name="WelcomeMessage" xml:space="preserve">
-    <value>Thank you for reaching out. An admin will review your message and get back to you within 24 hours. Please explain your issue in as much detail as possible.</value>
-  </data>
   <data name="You" xml:space="preserve">
     <value>You</value>
+  </data>
+  <data name="ResumeChat" xml:space="preserve">
+    <value>ResumeChat</value>
+  </data>
+  <data name="AdminHasReplied" xml:space="preserve">
+    <value>Admin has replied — Resume Chat</value>
+  </data>
+  <data name="AdminWillCheck24h" xml:space="preserve">
+    <value>An admin will check your chat within 24 hours. Please describe your problem in as much detail…</value>
+  </data>
+  <data name="Admin" xml:space="preserve">
+    <value>Admin</value>
+    <comment>Admin</comment>
   </data>
 </root>

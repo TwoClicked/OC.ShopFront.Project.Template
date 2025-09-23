@@ -123,6 +123,9 @@
   <data name="BackToCustomers" xml:space="preserve">
     <value>Back to Customers</value>
   </data>
+  <data name="BackToOrders" xml:space="preserve">
+    <value>Back to orders</value>
+  </data>
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>

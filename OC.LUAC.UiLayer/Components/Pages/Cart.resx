@@ -126,6 +126,9 @@
   <data name="LoadingCart" xml:space="preserve">
     <value>Loading your cart...</value>
   </data>
+  <data name="OnlyNLeft" xml:space="preserve">
+    <value>Only {0} left in stock.</value>
+  </data>
   <data name="Price" xml:space="preserve">
     <value>Price</value>
   </data>

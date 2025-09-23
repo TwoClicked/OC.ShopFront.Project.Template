@@ -53,12 +53,20 @@
 
                             <!-- Quantity -->
                             <td class="py-4 text-center">
-                                <input type="number"
-                                       min="1"
-                                       value="@item.Quantity"
-                                       disabled="@(item.MaxStock == 0)"
-                                       class="w-20 text-center bg-neutral-800 border border-neutral-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                                       @oninput="e => QtyInput(item, e)" />
+                                <div class="flex flex-col items-center">
+                                    <input type="number"
+                                           min="1"
+                                           max="@item.MaxStock"
+                                           value="@item.Quantity"
+                                           disabled="@(item.MaxStock == 0)"
+                                           class="w-20 text-center bg-neutral-800 border border-neutral-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                           @oninput="e => QtyInput(item, e)" />
+
+                                    @if (cartMessages.TryGetValue((item.ProductId, item.ProductVariantId), out var msg) && !string.IsNullOrEmpty(msg))
+                                    {
+                                        <span class="text-xs text-red-500 mt-1">@msg</span>
+                                    }
+                                </div>
                             </td>
 
                             <!-- Subtotal -->
@@ -94,6 +102,9 @@
 @code {
     private bool loading = true;
 
+    // store messages for cart items
+    private Dictionary<(int productId, int variantId), string> cartMessages = new();
+
     protected override async Task OnInitializedAsync()
     {
         // optional small delay ensures CartService has populated
@@ -106,10 +117,27 @@
         if (!int.TryParse(e.Value?.ToString(), out var v)) v = item.Quantity;
         if (v < 1) v = 1;
 
+        string? msg = null;
+
+        // clamp to stock and set message
+        if (item.MaxStock > 0 && v > item.MaxStock)
+        {
+            v = item.MaxStock;
+            msg = string.Format(L["OnlyNLeft"], item.MaxStock);
+        }
+
+        // update cart
         CartService.UpdateQuantity(item.ProductId, item.ProductVariantId, v);
+
+        // store message for this product/variant
+        cartMessages[(item.ProductId, item.ProductVariantId)] = msg ?? "";
+
         StateHasChanged();
     }
 
     private void Remove(CartItemDto item)
-        => CartService.RemoveFromCart(item.ProductId, item.ProductVariantId);
+    {
+        CartService.RemoveFromCart(item.ProductId, item.ProductVariantId);
+        cartMessages.Remove((item.ProductId, item.ProductVariantId));
+    }
 }

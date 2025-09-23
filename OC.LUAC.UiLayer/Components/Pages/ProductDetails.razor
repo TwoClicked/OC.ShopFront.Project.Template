@@ -34,8 +34,15 @@
             <!-- Product Info -->
             <div>
                 <h1 class="text-3xl font-bold mb-4">@GetProductName()</h1>
-                <p class="text-amber-600 text-xl mb-4">@product.Price.ToString("C", new System.Globalization.CultureInfo("de-DE"))</p>
-                <p class="text-gray-300 mb-6">@GetProductDescription()</p>
+                <p class="text-amber-600 text-xl mb-4">
+                    @product.Price.ToString("C", new System.Globalization.CultureInfo("de-DE"))
+                </p>
+
+                <!-- Product description -->
+                <div class="text-gray-300 mb-6">
+                    @GetProductDescription()
+                </div>
+
                 <h3 class="font-semibold mb-2">@L["AvailableSizes"]</h3>
                 <div class="flex gap-2 mb-2">
                     @foreach (var variant in product.Variants)
@@ -49,26 +56,41 @@
                         </button>
                     }
                 </div>
+
                 @if (selectedVariant != null)
                 {
                     <p class="text-sm mb-4 @(selectedVariant.Stock > 0 ? "text-amber-600" : "text-red-500")">
-                        @(selectedVariant.Stock > 0 ? L["InStock"] : L["OutOfStock"])
+                        @if (selectedVariant.Stock <= 0)
+                        {
+                            @L["OutOfStock"]
+                        }
+                        else if (selectedVariant.Stock <= 5)
+                        {
+                            @string.Format(L["OnlyNLeft"], selectedVariant.Stock)
+                        }
+                        else
+                        {
+                            @L["InStock"]
+                        }
                     </p>
                 }
+
                 <!-- Quantity -->
                 @if (selectedVariant != null && selectedVariant.Stock > 0)
                 {
                     <div class="flex items-center gap-6 mb-6">
                         <label class="text-sm text-gray-300">@L["Quantity"]</label>
-                        <input type="number" min="1"
+                        <input type="number" min="1" max="@selectedVariant.Stock"
                                class="w-20 text-center bg-neutral-800 border border-neutral-700 mr-4"
                                value="@qty" @oninput="OnQtyInput" />
                     </div>
                 }
+
                 @if (!string.IsNullOrEmpty(message))
                 {
                     <p class="text-sm @(messageIsError ? "text-red-500" : "text-amber-500") mb-2">@message</p>
                 }
+
                 <div class="mt-2 flex gap-4">
                     <button class="px-6 py-3 bg-amber-600 text-white rounded disabled:opacity-50"
                             disabled="@(selectedVariant == null || selectedVariant.Id == 0 || selectedVariant.Stock == 0)"
@@ -84,6 +106,7 @@
         </div>
     }
 </div>
+
 @code {
     [Parameter] public int Id { get; set; }
     [Parameter, SupplyParameterFromQuery(Name = "origin")]
@@ -116,6 +139,7 @@
                 };
             }).ToList();
             product.Variants = sizeOptions;
+
             if (product.Images.Any())
                 currentImage = Config["ApiBaseUrl"].TrimEnd('/') + product.Images.First().ImageUrl;
             else if (!string.IsNullOrEmpty(product.ThumbnailUrl))
@@ -128,8 +152,18 @@
     private string GetProductName() =>
         System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de" ? product?.Name_De : product?.Name_En;
 
-    private string GetProductDescription() =>
-        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de" ? product?.Description_De : product?.Description_En;
+    private MarkupString GetProductDescription()
+    {
+        var desc = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de"
+            ? product?.Description_De
+            : product?.Description_En;
+
+        if (string.IsNullOrWhiteSpace(desc))
+            return new MarkupString("");
+
+        // Replace line breaks with <br/>
+        return new MarkupString(desc.Replace("\n", "<br/>"));
+    }
 
     private void SelectSize(ProductVariantDto variant)
     {
@@ -137,21 +171,25 @@
         selectedSize = variant.Size;
         selectedVariant = variant;
         message = null;
+
         if (selectedVariant.Stock > 0 && qty > selectedVariant.Stock)
             qty = selectedVariant.Stock;
     }
+
     private void PrevImage()
     {
         if (product?.Images == null || product.Images.Count == 0) return;
         currentIndex = (currentIndex - 1 + product.Images.Count) % product.Images.Count;
         currentImage = Config["ApiBaseUrl"].TrimEnd('/') + product.Images[currentIndex].ImageUrl;
     }
+
     private void NextImage()
     {
         if (product?.Images == null || product.Images.Count == 0) return;
         currentIndex = (currentIndex + 1) % product.Images.Count;
         currentImage = Config["ApiBaseUrl"].TrimEnd('/') + product.Images[currentIndex].ImageUrl;
     }
+
     private void GoBack()
     {
         if (Origin == "shop")
@@ -159,23 +197,30 @@
         else
             Nav.NavigateTo("/");
     }
+
     private void OnQtyInput(ChangeEventArgs e)
     {
         if (!int.TryParse(e.Value?.ToString(), out var v)) v = 1;
         if (v < 1) v = 1;
-        if (selectedVariant != null && v > selectedVariant.Stock) v = selectedVariant.Stock;
+
+        if (selectedVariant != null && v > selectedVariant.Stock)
+            v = selectedVariant.Stock;
+
         qty = v;
     }
+
     private async Task AddToCart()
     {
         if (product == null || selectedVariant == null || selectedVariant.Id <= 0)
             return;
+
         if (selectedVariant.Stock <= 0)
         {
             messageIsError = true;
             message = L["OutOfStock"];
             return;
         }
+
         if (qty > selectedVariant.Stock)
         {
             messageIsError = true;
@@ -183,6 +228,7 @@
             qty = selectedVariant.Stock;
             return;
         }
+
         var added = await CartService.AddOrIncrease(new CartItemDto
         {
             ProductId = product.Id,
@@ -194,6 +240,7 @@
             MaxStock = selectedVariant.Stock,
             ThumbnailUrl = product.ThumbnailUrl
         });
+
         messageIsError = !added;
         message = added ? L["AddedToCart"] : L["AddFail"];
         StateHasChanged();
