@@ -44,7 +44,8 @@ namespace OC.LUAC.UiLayer.Services
 
             if (existing != null)
             {
-                if (existing.Quantity + item.Quantity > item.MaxStock)
+                if (existing.Quantity + item.Quantity > item.MaxStock) // So that if they added an Item and try to add another item it sees the cart and the items added to details
+                                                                       // Hardening check would be to check on server, Per user.
                     return false;
 
                 existing.Quantity += item.Quantity;
