@@ -11,6 +11,26 @@
 @inject HttpClient Http
 @inject Microsoft.Extensions.Localization.IStringLocalizer<OC.LUAC.UiLayer.Components.Pages.Checkout> L
 
+<!-- Tiny CSS-only animated dots -->
+<style>
+    .loading-dots {
+        display: inline-block;
+        width: 0ch;
+        overflow: hidden;
+        white-space: nowrap;
+        animation: dots 1s steps(4, end) infinite;
+        vertical-align: bottom;
+        font-variant-ligatures: none;
+    }
+    @@keyframes dots {
+        0%   { width: 0ch; }
+        25%  { width: 1ch; }
+        50%  { width: 2ch; }
+        75%  { width: 3ch; }
+        100% { width: 0ch; }
+    }
+</style>
+
 <section class="py-16 px-6 md:px-12 text-white">
     <h2 class="text-3xl font-bold mb-10 text-center">@L["Title"]</h2>
 
@@ -51,11 +71,20 @@
                         </div>
                     }
 
-                    <!-- Place order -->
+                    <!-- Place order (text-only with animated dots) -->
                     <button type="submit"
-                            class="px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700"
+                            class="px-6 py-3 bg-amber-600 rounded text-white font-bold hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed"
                             disabled="@isSubmitting">
-                        @(isSubmitting? L["PlacingOrder"] : L["PlaceOrder"])
+                        @if (isSubmitting)
+                        {
+                            <span class="inline-flex items-center gap-2" aria-live="polite" aria-atomic="true">
+                                <span>@L["PlacingOrder"]</span>
+                            </span>
+                        }
+                        else
+                        {
+                            @L["PlaceOrder"]
+                        }
                     </button>
 
                     @if (!string.IsNullOrEmpty(error))
@@ -204,11 +233,18 @@
         if (isSubmitting) return;
 
         error = null;
+        isSubmitting = true;
+
+        // Show "Placing order..." immediately
+        StateHasChanged();
+        await Task.Yield();
 
         var oos = Cart.Items.FirstOrDefault(i => i.MaxStock <= 0 || i.Quantity > i.MaxStock);
         if (oos is not null)
         {
             error = L["OutOfStockError", oos.ProductName];
+            isSubmitting = false;
+            StateHasChanged();
             return;
         }
 
@@ -216,10 +252,10 @@
         if (quote is null)
         {
             error = L["SelectCountryError"];
+            isSubmitting = false;
+            StateHasChanged();
             return;
         }
-
-        isSubmitting = true;
 
         try
         {
@@ -250,6 +286,7 @@
         finally
         {
             isSubmitting = false;
+            StateHasChanged();
         }
     }
 
@@ -380,16 +417,16 @@
         <ValidationMessage For="@(() => model.PostalCode)" />
     </div>
 
-    <!-- ✅ Dropdown for country -->
+    <!-- Country -->
     <div class="md:col-span-2">
         <label class="block mb-1">@L["Country"]*</label>
         <InputSelect class="w-full bg-neutral-900 border border-neutral-700 rounded p-2"
                      @bind-Value="SelectedCountry">
             <option value="">-- @L["SelectCountry"] --</option>
             @foreach (var c in Countries)
-                        {
-            <option value="@c.Code">@c.Name</option>
-                        }
+            {
+                <option value="@c.Code">@c.Name</option>
+            }
         </InputSelect>
         <ValidationMessage For="@(() => model.Country)" />
     </div>
