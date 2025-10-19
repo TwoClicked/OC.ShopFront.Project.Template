@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject AdminAuthService AdminAuth
 @inject NavigationManager Nav
+@attribute [Authorize(Roles = "Admin")]
 @inject Microsoft.Extensions.Localization.IStringLocalizer<AdminOrdersTab> L
 @using System.Globalization
 @using OC.LUAC.UiLayer.DTO.Order

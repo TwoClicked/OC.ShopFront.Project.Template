@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject AdminAuthService AdminAuth
 @inject NavigationManager Nav
+@attribute [Authorize(Roles = "Admin")]
 @inject Microsoft.Extensions.Localization.IStringLocalizer<AdminCustomersTab> L
 
 <div class="max-w-5xl mx-auto space-y-6 flex flex-col items-center">

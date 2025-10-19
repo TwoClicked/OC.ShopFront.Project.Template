@@ -3,6 +3,7 @@
 @inject AdminAuthService Auth
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
+@attribute [Authorize(Roles = "Admin")]
 @inject Microsoft.Extensions.Localization.IStringLocalizer<AdminChatTab> L
 
 <h2 class="text-2xl font-bold mb-4 text-amber-600">@L["LiveCustomerChats"]</h2>

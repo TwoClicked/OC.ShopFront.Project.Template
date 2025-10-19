@@ -5,6 +5,7 @@
 @using OC.LUAC.UiLayer.Services
 @inject AuthService AuthService
 @inject NavigationManager Nav
+@attribute [Authorize(Roles ="Customer")] // Require authentication to access this page
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Account> L
 
 <section class="min-h-screen bg-neutral-900 text-white p-8">

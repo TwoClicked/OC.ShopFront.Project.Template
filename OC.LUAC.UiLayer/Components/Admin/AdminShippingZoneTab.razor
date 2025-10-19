@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject AdminAuthService AdminAuth
+@attribute [Authorize(Roles = "Admin")]
 @inject IJSRuntime JS
 @inject Microsoft.Extensions.Localization.IStringLocalizer<AdminShippingZoneTab> L
 

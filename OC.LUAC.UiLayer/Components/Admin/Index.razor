@@ -1,5 +1,6 @@
 ﻿@page "/admin"
 @inject NavigationManager Nav
+@attribute [Authorize(Roles = "Admin")]
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Index> L
 
 <h1 class="text-3xl font-bold mb-6">@L["AdminBackOffice"]</h1>

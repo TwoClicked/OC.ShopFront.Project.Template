@@ -1,126 +1,88 @@
 ﻿using System.Net.Http.Json;
-using System.IdentityModel.Tokens.Jwt;
 using Blazored.LocalStorage;
+using Microsoft.JSInterop;
 using OC.LUAC.UiLayer.DTO.Auth;
 
 namespace OC.LUAC.UiLayer.Services
 {
     public class AdminAuthService
     {
-        private readonly HttpClient _http;
+        private readonly HttpClient _apiHttp;      // API calls (if/when needed)
         private readonly ILocalStorageService _localStorage;
+        private readonly IJSRuntime _js;
+
         private const string TokenKey = "adminToken";
 
         public event Action? OnAuthStateChanged;
 
-        public AdminAuthService(HttpClient http, ILocalStorageService localStorage)
+        public AdminAuthService(IHttpClientFactory factory, ILocalStorageService localStorage, IJSRuntime js)
         {
-            _http = http;
+            _apiHttp = factory.CreateClient("ApiClient");
             _localStorage = localStorage;
+            _js = js;
         }
 
         // ====================
-        // LOGIN
+        // LOGIN via JS fetch -> /ui/admin/login (sets cookie in browser)
         // ====================
         public async Task<bool> LoginAsync(LoginDto dto)
         {
-            var response = await _http.PostAsJsonAsync("admin/auth/login", dto);
-            if (!response.IsSuccessStatusCode) return false;
+            // Calls window.uiAdminLogin(dto) from wwwroot/app.js
+            AdminLoginResponseDto? result;
+            try
+            {
+                result = await _js.InvokeAsync<AdminLoginResponseDto>("uiAdminLogin", dto);
+            }
+            catch
+            {
+                return false;
+            }
 
-            var result = await response.Content.ReadFromJsonAsync<AdminLoginResponseDto>();
-            if (result == null || string.IsNullOrEmpty(result.Token)) return false;
-
-            // Decode role from token
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(result.Token);
-            var role = jwt.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
-
-            if (role != "Admin" && result.Role != "Admin") return false;
+            if (result == null || string.IsNullOrEmpty(result.Token) || !string.Equals(result.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+                return false;
 
             await SafeSetItemAsync(TokenKey, result.Token);
-
             OnAuthStateChanged?.Invoke();
             return true;
         }
 
         // ====================
-        // LOGOUT
+        // LOGOUT via JS fetch -> /ui/logout (clears cookie)
         // ====================
         public async Task LogoutAsync()
         {
+            try { await _js.InvokeVoidAsync("uiLogout"); } catch { /* ignore */ }
             await SafeRemoveItemAsync(TokenKey);
             OnAuthStateChanged?.Invoke();
         }
 
         // ====================
-        // CHECK LOGIN
+        // CHECK LOGIN (local token presence only; cookie auth gate is server-side)
         // ====================
         public async Task<bool> IsLoggedInAsync()
         {
             var token = await SafeGetItemAsync<string>(TokenKey);
-            Console.WriteLine("🔑 AdminAuthService.IsLoggedInAsync called");
-            Console.WriteLine($"Token found? {(string.IsNullOrEmpty(token) ? "No" : "Yes")}");
-
-            if (string.IsNullOrEmpty(token)) return false;
-
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(token);
-
-            Console.WriteLine($"Role claim: {string.Join(",", jwt.Claims.Where(c => c.Type == "role").Select(c => c.Value))}");
-
-            if (jwt.ValidTo < DateTime.UtcNow)
-            {
-                Console.WriteLine("❌ Token expired, logging out admin");
-                await LogoutAsync();
-                return false;
-            }
-
-            var isAdmin = jwt.Claims.Any(c => c.Type == "role" && c.Value == "Admin");
-            Console.WriteLine($"✅ IsAdmin? {isAdmin}");
-            return isAdmin;
+            return !string.IsNullOrEmpty(token);
         }
 
         public async Task<string?> GetTokenAsync() =>
             await SafeGetItemAsync<string>(TokenKey);
 
-        // ====================
-        // SAFE LOCAL STORAGE ACCESS
-        // ====================
+        // -------- Safe local storage helpers --------
         private async Task<T?> SafeGetItemAsync<T>(string key)
         {
-            try
-            {
-                return await _localStorage.GetItemAsync<T>(key);
-            }
-            catch (InvalidOperationException)
-            {
-                // JS not ready (likely prerendering)
-                return default;
-            }
+            try { return await _localStorage.GetItemAsync<T>(key); }
+            catch { return default; }
         }
 
         private async Task SafeSetItemAsync<T>(string key, T value)
         {
-            try
-            {
-                await _localStorage.SetItemAsync(key, value);
-            }
-            catch (InvalidOperationException)
-            {
-                // Ignore if JS not available
-            }
+            try { await _localStorage.SetItemAsync(key, value); } catch { }
         }
 
         private async Task SafeRemoveItemAsync(string key)
         {
-            try
-            {
-                await _localStorage.RemoveItemAsync(key);
-            }
-            catch (InvalidOperationException)
-            {
-                // Ignore if JS not available
-            }
+            try { await _localStorage.RemoveItemAsync(key); } catch { }
         }
     }
 }

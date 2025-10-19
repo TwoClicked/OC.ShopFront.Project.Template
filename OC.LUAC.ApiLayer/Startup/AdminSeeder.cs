@@ -14,7 +14,7 @@ namespace OC.LUAC.ApiLayer.Startup
 
             // if there is an admin, we do nothing
             var existing = await admins.GetAllAsync();
-            if (existing != null) return;
+            if (existing != null && existing.Any()) return;
 
             var email = config["AdminAuth:Email"];
             var password = config["AdminAuth:Password"];

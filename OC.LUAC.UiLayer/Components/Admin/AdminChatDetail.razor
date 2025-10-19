@@ -4,6 +4,7 @@
 @inject AdminAuthService Auth
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
+@attribute [Authorize(Roles = "Admin")]
 @inject Microsoft.Extensions.Localization.IStringLocalizer<AdminChatDetail> L
 
 <h2 class="text-2xl font-bold mb-4 text-amber-600">

@@ -3,6 +3,7 @@
 @using OC.LUAC.UiLayer.DTO.Order
 @inject HttpClient Http
 @inject AdminAuthService AdminAuth
+@attribute [Authorize(Roles = "Admin")]
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject Microsoft.Extensions.Localization.IStringLocalizer<OC.LUAC.UiLayer.Components.Pages.AdminCustomerOrders> L

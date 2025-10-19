@@ -3,6 +3,7 @@
 @inject HttpClient Http
 @inject AdminAuthService AdminAuth
 @inject NavigationManager Nav
+@attribute [Authorize(Roles = "Admin")]
 @inject IJSRuntime JS
 @inject Microsoft.Extensions.Localization.IStringLocalizer<AdminVouchersTab> L
 

@@ -1,16 +1,17 @@
-﻿using System.Text.Json.Serialization;
+﻿using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Localization.Routing;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using OC.LUAC.ApiLayer;
 using OC.LUAC.ApiLayer.Hubs;
+using OC.LUAC.ApiLayer.Startup;
+using OC.LUAC.DataLayer;
 using OC.LUAC.ServiceLayer;
 using QuestPDF.Infrastructure;
-using Microsoft.AspNetCore.Localization;
 using System.Globalization;
-using Microsoft.EntityFrameworkCore;
-using OC.LUAC.DataLayer;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Localization.Routing;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -144,6 +145,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<ChatHub>("/chathub");
+
+
+// Seed default admin user
+// await app.Services.SeedDefaultAdminAsync(app.Configuration); Only needed on a fresh launch, but if there is an admin not needed
+
 
 // ✅ Catch startup SQL errors
 try

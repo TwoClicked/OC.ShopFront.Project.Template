@@ -32,39 +32,43 @@
     <script>
         (function () {
             var culture = localStorage.getItem('culture');
-            if (culture) {
-                // set ASP.NET Core culture cookie
-                document.cookie = ".AspNetCore.Culture=c=" + culture + "|uic=" + culture + "; path=/";
+            if (!culture) return;
 
-                // also set navigator language so Blazor picks it up
+            // persist for 1 year, lax, secure on https
+            var oneYear = 60 * 60 * 24 * 365;
+            var cookie = ".AspNetCore.Culture=c=" + culture + "|uic=" + culture
+                + "; path=/; samesite=lax; max-age=" + oneYear;
+            if (location.protocol === "https:") cookie += "; secure";
+            document.cookie = cookie;
+
+            // best-effort hint to the client side
+            try {
                 Object.defineProperty(navigator, "language", { value: culture, configurable: true });
                 Object.defineProperty(navigator, "languages", { value: [culture], configurable: true });
-            }
+            } catch { /* ignore */ }
         })();
     </script>
 
     <!-- Flatpickr init helper -->
     <script>
         window.initFlatpickr = function () {
-            if (window.flatpickr) {
-                // Start Date
-                if (document.querySelector("#startDate") && !document.querySelector("#startDate")._flatpickr) {
-                    flatpickr("#startDate", {
-                        dateFormat: "Y-m-d"
-                    });
-                }
-                // End Date
-                if (document.querySelector("#endDate") && !document.querySelector("#endDate")._flatpickr) {
-                    flatpickr("#endDate", {
-                        dateFormat: "Y-m-d"
-                    });
-                }
+            if (!window.flatpickr) return;
+            var start = document.querySelector("#startDate");
+            if (start && !start._flatpickr) {
+                flatpickr(start, { dateFormat: "Y-m-d" });
+            }
+            var end = document.querySelector("#endDate");
+            if (end && !end._flatpickr) {
+                flatpickr(end, { dateFormat: "Y-m-d" });
             }
         };
     </script>
 
     <!-- Flatpickr script -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
+
+    <!-- 🔑 Your UI auth helpers (uiLogin, uiAdminLogin, uiLogout) -->
+    <script src="/app.js"></script>
 
     <script src="_framework/blazor.server.js"></script>
 </body>

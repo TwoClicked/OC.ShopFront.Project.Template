@@ -3,6 +3,7 @@
 @inject HttpClient Http
 @inject AdminAuthService AdminAuth
 @inject NavigationManager Nav
+@attribute [Authorize(Roles = "Admin")]
 @inject Microsoft.Extensions.Localization.IStringLocalizer<AdminStockLog> L
 
 <h2 class="text-2xl font-bold mb-6 text-amber-600">@L["Title"]</h2>

@@ -2,35 +2,37 @@
 using System.Net.Http.Json;
 using System.IdentityModel.Tokens.Jwt;
 using Blazored.LocalStorage;
+using Microsoft.JSInterop;
 using OC.LUAC.UiLayer.DTO.Auth;
 using OC.LUAC.UiLayer.DTO.Order;
 using OC.LUAC.UiLayer.DTO.AdminDash;
-
-
 
 namespace OC.LUAC.UiLayer.Services
 {
     public class AuthService
     {
-        private readonly HttpClient _http;
+        private readonly HttpClient _apiHttp;  // for API calls (customers/me, orders, etc.)
         private readonly ILocalStorageService _localStorage;
+        private readonly IJSRuntime _js;
+
         private const string TokenKey = "authToken";
         private const string ProfileKey = "userProfile";
 
         public event Action? OnAuthStateChanged;
 
-        public AuthService(HttpClient http, ILocalStorageService localStorage)
+        public AuthService(IHttpClientFactory factory, ILocalStorageService localStorage, IJSRuntime js)
         {
-            _http = http;
+            _apiHttp = factory.CreateClient("ApiClient");
             _localStorage = localStorage;
+            _js = js;
         }
 
         // ====================
-        // REGISTER
+        // REGISTER (API)
         // ====================
         public async Task<(bool Success, string? Status, string? Message)> RegisterAsync(RegisterDto dto)
         {
-            var response = await _http.PostAsJsonAsync("customers/register", dto);
+            var response = await _apiHttp.PostAsJsonAsync("customers/register", dto);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -45,30 +47,30 @@ namespace OC.LUAC.UiLayer.Services
                 return (true, status?.ToString(), msg);
             }
 
-            return (true, null, null); // fallback
+            return (true, null, null);
         }
 
-
         // ====================
-        // LOGIN
+        // LOGIN via JS fetch -> /ui/login (sets cookie in browser)
         // ====================
         public async Task<(bool Success, bool Disabled)> LoginAsync(LoginDto dto)
         {
-            var response = await _http.PostAsJsonAsync("customers/login", dto);
-
-            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            // Calls window.uiLogin(dto) from wwwroot/app.js
+            LoginResponseDto? loginResponse;
+            try
             {
-                // Account exists but disabled
-                return (false, true);
+                loginResponse = await _js.InvokeAsync<LoginResponseDto>("uiLogin", dto);
+            }
+            catch
+            {
+                return (false, false);
             }
 
-            if (!response.IsSuccessStatusCode)
-                return (false, false); // Invalid credentials
-
-            var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
-            if (loginResponse is null || string.IsNullOrEmpty(loginResponse.Token))
+            // 403 is handled inside uiLogin by throwing; here we only get JSON or nothing
+            if (loginResponse is null || loginResponse.Customer is null)
                 return (false, false);
 
+            // keep JWT for API bearer calls
             await _localStorage.SetItemAsync(TokenKey, loginResponse.Token);
             await _localStorage.SetItemAsync(ProfileKey, loginResponse.Customer);
 
@@ -76,19 +78,19 @@ namespace OC.LUAC.UiLayer.Services
             return (true, false);
         }
 
-
         // ====================
-        // LOGOUT
+        // LOGOUT via JS fetch -> /ui/logout (clears cookie)
         // ====================
         public async Task LogoutAsync()
         {
+            try { await _js.InvokeVoidAsync("uiLogout"); } catch { /* ignore */ }
             await _localStorage.RemoveItemAsync(TokenKey);
             await _localStorage.RemoveItemAsync(ProfileKey);
             OnAuthStateChanged?.Invoke();
         }
 
         // ====================
-        // CHECK LOGIN
+        // CHECK LOGIN (token freshness)
         // ====================
         public async Task<bool> IsLoggedInAsync()
         {
@@ -98,10 +100,9 @@ namespace OC.LUAC.UiLayer.Services
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.ReadJwtToken(token);
 
-            // check exp claim
             if (jwt.ValidTo < DateTime.UtcNow)
             {
-                await LogoutAsync(); // auto logout
+                await LogoutAsync();
                 return false;
             }
 
@@ -112,11 +113,10 @@ namespace OC.LUAC.UiLayer.Services
             await _localStorage.GetItemAsync<string>(TokenKey);
 
         // ====================
-        // PROFILE (cached + refresh)
+        // PROFILE (API; cached + refresh)
         // ====================
         public async Task<CustomerProfileDto?> GetProfileAsync(bool refresh = false)
         {
-            // load from cache
             var profile = await _localStorage.GetItemAsync<CustomerProfileDto>(ProfileKey);
             if (!refresh && profile != null) return profile;
 
@@ -128,7 +128,7 @@ namespace OC.LUAC.UiLayer.Services
 
             try
             {
-                var response = await _http.SendAsync(request);
+                var response = await _apiHttp.SendAsync(request);
                 if (!response.IsSuccessStatusCode) return profile;
 
                 var latest = await response.Content.ReadFromJsonAsync<CustomerProfileDto>();
@@ -138,61 +138,34 @@ namespace OC.LUAC.UiLayer.Services
                     return latest;
                 }
             }
-            catch
-            {
-                // ignore errors and fall back to cached
-            }
+            catch { /* ignore */ }
 
             return profile;
         }
 
         // ====================
-        // UPDATE PROFILE
+        // UPDATE PROFILE (API)
         // ====================
         public async Task<bool> UpdateProfileAsync(UpdateCustomerDto dto)
         {
             var token = await GetTokenAsync();
-            if (string.IsNullOrEmpty(token))
-            {
-                Console.WriteLine("⚠️ No token found in local storage.");
-                return false;
-            }
+            if (string.IsNullOrEmpty(token)) return false;
 
-            var url = "customers/me";
-            using var request = new HttpRequestMessage(HttpMethod.Put, url)
+            using var request = new HttpRequestMessage(HttpMethod.Put, "customers/me")
             {
                 Content = JsonContent.Create(dto)
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            // Debug logs
-            Console.WriteLine("---- UpdateProfileAsync Request ----");
-            Console.WriteLine($"URL: {_http.BaseAddress}{url}");
-            Console.WriteLine($"Authorization: Bearer {token.Substring(0, 20)}..."); // only log start of token
-            Console.WriteLine($"Payload: {System.Text.Json.JsonSerializer.Serialize(dto)}");
-            Console.WriteLine("-----------------------------------");
+            var response = await _apiHttp.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return false;
 
-            var response = await _http.SendAsync(request);
-
-            // Response log
-            Console.WriteLine($"Response: {(int)response.StatusCode} {response.ReasonPhrase}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Response Body: {body}");
-                return false;
-            }
-
-            // Refresh profile cache
             var refreshed = await GetProfileAsync(refresh: true);
-            Console.WriteLine($"Profile refresh success: {refreshed != null}");
             return refreshed != null;
         }
 
-
         // ====================
-        // CHANGE PASSWORD
+        // CHANGE PASSWORD (API)
         // ====================
         public async Task<bool> ChangePasswordAsync(ChangePasswordFormDto dto)
         {
@@ -205,27 +178,27 @@ namespace OC.LUAC.UiLayer.Services
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await _http.SendAsync(request);
+            var response = await _apiHttp.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
 
         // ====================
-        // RESET PASSWORD
+        // RESET PASSWORD (API)
         // ====================
         public async Task<bool> ForgotPasswordAsync(string email)
         {
-            var response = await _http.PostAsJsonAsync("customers/forgot-password", new { Email = email });
+            var response = await _apiHttp.PostAsJsonAsync("customers/forgot-password", new { Email = email });
             return response.IsSuccessStatusCode;
         }
 
         public async Task<bool> ResetPasswordAsync(ResetPasswordDto dto)
         {
-            var response = await _http.PostAsJsonAsync("customers/reset-password", dto);
+            var response = await _apiHttp.PostAsJsonAsync("customers/reset-password", dto);
             return response.IsSuccessStatusCode;
         }
 
         // ====================
-        // DELETE ACCOUNT
+        // DELETE ACCOUNT (API)
         // ====================
         public async Task<bool> DeleteAccountAsync()
         {
@@ -235,13 +208,12 @@ namespace OC.LUAC.UiLayer.Services
             using var request = new HttpRequestMessage(HttpMethod.Delete, "customers/me");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await _http.SendAsync(request);
+            var response = await _apiHttp.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
 
-
         // ====================
-        // GET ORDERS
+        // GET ORDERS (API)
         // ====================
         public async Task<List<AdminOrderSummaryDto>?> GetOrdersAsync()
         {
@@ -253,13 +225,12 @@ namespace OC.LUAC.UiLayer.Services
 
             try
             {
-                var response = await _http.SendAsync(request);
+                var response = await _apiHttp.SendAsync(request);
                 if (!response.IsSuccessStatusCode) return null;
 
                 var apiOrders = await response.Content.ReadFromJsonAsync<List<OrderSummaryDto>>();
                 if (apiOrders == null) return null;
 
-                // Map API DTO → UI DTO
                 return apiOrders.Select(o => new AdminOrderSummaryDto
                 {
                     Id = o.Id,
@@ -286,7 +257,6 @@ namespace OC.LUAC.UiLayer.Services
                         UnitPrice = i.UnitPrice
                     }).ToList()
                 }).ToList();
-
             }
             catch
             {
@@ -294,9 +264,8 @@ namespace OC.LUAC.UiLayer.Services
             }
         }
 
-
         // ====================
-        // CANCEL ORDER
+        // CANCEL ORDER (API)
         // ====================
         public async Task<bool> CancelOrderAsync(int orderId)
         {
@@ -306,7 +275,7 @@ namespace OC.LUAC.UiLayer.Services
             using var request = new HttpRequestMessage(HttpMethod.Put, $"orders/{orderId}/cancel-me");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await _http.SendAsync(request);
+            var response = await _apiHttp.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
     }

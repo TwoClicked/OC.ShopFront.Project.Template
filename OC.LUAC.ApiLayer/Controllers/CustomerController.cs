@@ -17,7 +17,12 @@ public class CustomerController : ControllerBase
     private readonly IEmailService _email;
     private readonly IConfiguration _config;
 
-    public CustomerController(ICustomerService customers, IOrderService orders, ITokenService tokens, IEmailService email, IConfiguration config)
+    public CustomerController(
+        ICustomerService customers,
+        IOrderService orders,
+        ITokenService tokens,
+        IEmailService email,
+        IConfiguration config)
     {
         _customers = customers;
         _orders = orders;
@@ -30,10 +35,12 @@ public class CustomerController : ControllerBase
     // AUTH
     // =========================
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<object>> Register([FromBody] RegisterCustomerDto dto)
     {
-        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
 
         var customer = new Customer
         {
@@ -46,11 +53,11 @@ public class CustomerController : ControllerBase
         try
         {
             var created = await _customers.RegisterAsync(customer, dto.Password);
-            if (created == null) return BadRequest("Registration failed.");
+            if (created == null)
+                return BadRequest("Registration failed.");
 
             if (!created.IsGuest)
             {
-                // If this was a guest upgraded to full account, return a special message
                 return Ok(new
                 {
                     status = "UpgradedGuest",
@@ -59,7 +66,6 @@ public class CustomerController : ControllerBase
                 });
             }
 
-            // New registration
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, new
             {
                 status = "NewRegistration",
@@ -72,31 +78,37 @@ public class CustomerController : ControllerBase
         }
     }
 
-
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginDto dto)
     {
-        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
 
         var customer = await _customers.LoginAsync(dto.Email, dto.Password);
-
         if (customer == null)
-            return Unauthorized(new { message = "Invalid credentials" }); // check null first 
+            return Unauthorized(new { message = "Invalid credentials" });
 
         if (!customer.IsActive)
-            return StatusCode(403, new { message = "AccountDisabled" }); // only safe to check after null guard 
+            return StatusCode(403, new { message = "AccountDisabled" });
 
+        // ✅ Return JWT only — no cookies
         var token = _tokens.CreateCustomerToken(customer);
-        return Ok(new LoginResponseDto { Token = token, Customer = customer });
+
+        return Ok(new LoginResponseDto
+        {
+            Token = token,
+            Customer = customer
+        });
     }
 
-
-
+    [AllowAnonymous]
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
         var token = await _customers.CreatePasswordResetTokenAsync(dto.Email);
-        if (token == null) return Ok(); // don't reveal existence
+        if (token == null)
+            return Ok(); // don't reveal existence
 
         var frontendBaseUrl = _config["Frontend:BaseUrl"];
         var resetLink = $"{frontendBaseUrl}/reset-password?token={token.Token}";
@@ -106,6 +118,7 @@ public class CustomerController : ControllerBase
         return Ok(new { message = "If the email exists, a reset link was sent." });
     }
 
+    [AllowAnonymous]
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
@@ -138,7 +151,8 @@ public class CustomerController : ControllerBase
     public async Task<ActionResult<List<OrderSummaryDto>>> GetOrdersForCustomer(int id)
     {
         var orders = await _orders.GetOrdersByCustomerIdAsync(id);
-        if (orders == null || !orders.Any()) return Ok(new List<OrderSummaryDto>());
+        if (orders == null || !orders.Any())
+            return Ok(new List<OrderSummaryDto>());
 
         var result = orders.Select(o => new OrderSummaryDto
         {
@@ -146,28 +160,18 @@ public class CustomerController : ControllerBase
             OrderNumber = o.OrderNumber,
             Status = o.Status.ToString(),
             CreatedAt = o.CreatedAt,
-
-            // Totals
             Subtotal = o.TotalBeforeDiscount,
             Discount = o.DiscountAmount ?? 0,
             ShippingCost = o.ShippingCost,
             TotalAfterDiscount = o.TotalAfterDiscount,
-
-            // Customer Info
             CustomerName = o.Customer?.FirstName + " " + o.Customer?.LastName,
             CustomerEmail = o.Customer?.Email,
-
-            // Shipping Info
             ShippingAddress = $"{o.ShippingStreet} {o.ShippingNumber}",
             ShippingCity = o.ShippingCity,
             ShippingPostalCode = o.ShippingPostalCode,
             ShippingCountry = o.ShippingCountry,
-
-            // Tracking
             TrackingNumber = o.TrackingNumber,
             TrackingUrl = o.TrackingUrl,
-
-            // Items
             Items = o.Items.Select(i => new OrderItemDto
             {
                 ProductName = i.ProductName,
@@ -179,8 +183,6 @@ public class CustomerController : ControllerBase
 
         return Ok(result);
     }
-
-
 
     [Authorize(Roles = "Admin")]
     [HttpPut("{id:int}/deactivate")]
@@ -207,7 +209,6 @@ public class CustomerController : ControllerBase
         return Ok(active);
     }
 
-
     // =========================
     // SELF-SERVICE ENDPOINTS
     // =========================
@@ -223,7 +224,6 @@ public class CustomerController : ControllerBase
         var orders = await _orders.GetOrdersByCustomerIdAsync(customerId);
         return Ok(orders);
     }
-
 
     [Authorize(Roles = "Customer")]
     [HttpGet("me")]
