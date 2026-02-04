@@ -113,7 +113,7 @@
     </header>
 
 
-    <main class="flex-1 container mx-auto p-6 relative z-10">
+    <main class="flex-1 container mx-auto p-6 relative z-10 bg-neutral-900 rounded-lg">
         @Body
     </main>
 
@@ -131,14 +131,14 @@
 
     private string MainWrapperClass => "min-h-screen flex flex-col text-white relative";
     private string MainWrapperStyle =>
-        Nav.Uri.Contains("/loginRegister", StringComparison.OrdinalIgnoreCase)
-            ? "background-image: url('/images/login-page.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;"
-            : "background-color: rgb(23,23,23);";
+        "background-image: url('/images/LUAC-Login-Page.jpg');" +
+        "background-size: cover;" +
+        "background-position: center;" +
+        "background-repeat: no-repeat;" +
+        "background-attachment: fixed;";
 
-    private string HeaderClass =>
-        Nav.Uri.Contains("/loginRegister", StringComparison.OrdinalIgnoreCase)
-            ? "bg-transparent shadow-none z-10"
-            : "bg-neutral-900 shadow-md";
+
+    private string HeaderClass => "bg-neutral-900 shadow-md";
 
     private string FooterClass =>
         Nav.Uri.Contains("/loginRegister", StringComparison.OrdinalIgnoreCase)
