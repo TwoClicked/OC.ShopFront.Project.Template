@@ -1,4 +1,4 @@
-# OC.LUAC Shop
+# LUAC Shop(Shopify like website)
 
 A full-stack, multilingual e-commerce web application built with **ASP.NET Core 9** and **Blazor Server**. It supports customer registration and login, product browsing, shopping cart, checkout with vouchers and dynamic shipping zones, order management, and a full admin dashboard.
 
