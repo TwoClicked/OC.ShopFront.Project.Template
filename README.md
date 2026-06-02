@@ -1,24 +1,24 @@
-# LUAC Shop(Shopify like website)
+# 🛍️ OC.LUAC Shop
 
 A full-stack, multilingual e-commerce web application built with **ASP.NET Core 9** and **Blazor Server**. It supports customer registration and login, product browsing, shopping cart, checkout with vouchers and dynamic shipping zones, order management, and a full admin dashboard.
 
 ---
 
-## Table of Contents
+## 📋 Table of Contents
 
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Configuration](#configuration)
-- [Running the App](#running-the-app)
-- [Deployment](#deployment)
-- [API Reference](#api-reference)
+- [🏗️ Architecture](#architecture)
+- [⚙️ Tech Stack](#tech-stack)
+- [✨ Features](#features)
+- [📁 Project Structure](#project-structure)
+- [🚀 Getting Started](#getting-started)
+- [🔧 Configuration](#configuration)
+- [▶️ Running the App](#running-the-app)
+- [☁️ Deployment](#deployment)
+- [📡 API Reference](#api-reference)
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 The solution follows a clean **layered architecture** split into five projects:
 
@@ -34,26 +34,26 @@ The UI communicates with the API over HTTP. Customers authenticate via **cookie-
 
 ---
 
-## Tech Stack
+## ⚙️ Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Backend API | ASP.NET Core 9, C# |
-| Frontend | Blazor Server (.NET 9) |
-| Database | SQL Server (EF Core 9) |
-| Authentication | Cookie auth (customers) + JWT (admin) |
-| Real-time | SignalR |
-| PDF generation | QuestPDF (Community) |
-| Email | MailKit / MimeKit (SMTP) |
-| Local storage | Blazored.LocalStorage |
-| Hosting | Azure App Service (Windows) |
-| Localization | `en` / `de` (resource files) |
+| 🖥️ Backend API | ASP.NET Core 9, C# |
+| 🎨 Frontend | Blazor Server (.NET 9) |
+| 🗄️ Database | SQL Server (EF Core 9) |
+| 🔐 Authentication | Cookie auth (customers) + JWT (admin) |
+| ⚡ Real-time | SignalR |
+| 📄 PDF generation | QuestPDF (Community) |
+| 📧 Email | MailKit / MimeKit (SMTP) |
+| 💾 Local storage | Blazored.LocalStorage |
+| ☁️ Hosting | Azure App Service (Windows) |
+| 🌍 Localization | `en` / `de` (resource files) |
 
 ---
 
-## Features
+## ✨ Features
 
-### Storefront
+### 🛒 Storefront
 - Product listing with search, category filter, featured flag, and pagination
 - Product detail page with size variants and stock indicators
 - Shopping cart (persisted in local storage)
@@ -65,12 +65,12 @@ The UI communicates with the API over HTTP. Customers authenticate via **cookie-
 - Order confirmation email (HTML + PDF invoice attachment, sent in customer's language)
 - Guest checkout supported
 
-### Customer Account
+### 👤 Customer Account
 - Registration and login
 - Order history
 - Profile management
 
-### Admin Dashboard
+### 🔧 Admin Dashboard
 - Product CRUD (images, variants, stock)
 - Order management (view open/all orders, mark as shipped with tracking)
 - Stock action log
@@ -81,7 +81,7 @@ The UI communicates with the API over HTTP. Customers authenticate via **cookie-
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 /
@@ -113,7 +113,7 @@ The UI communicates with the API over HTTP. Customers authenticate via **cookie-
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -124,53 +124,29 @@ The UI communicates with the API over HTTP. Customers authenticate via **cookie-
 ### Clone and restore
 
 ```bash
-git clone https://github.com/your-org/oc-luac-shop.git
-cd oc-luac-shop
+git clone https://github.com/TwoClicked/OC.ShopFront.Project.Template.git
+cd OC.ShopFront.Project.Template
 dotnet restore
 ```
 
 ---
 
-## Configuration
+## 🔧 Configuration
 
-Both `OC.LUAC.ApiLayer` and `OC.LUAC.UiLayer` have their own `appsettings.json` / `appsettings.Development.json`.
+Both `OC.LUAC.ApiLayer` and `OC.LUAC.UiLayer` have their own `appsettings.json`.
 
-### API Layer — `appsettings.Development.json`
+Sensitive values are **never stored in files** — use [.NET User Secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) for local development:
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=OCLUACShopDB;Trusted_Connection=True;"
-  },
-  "Jwt": {
-    "Issuer": "LuacApi",
-    "Audience": "LuacClients",
-    "Key": "<your-secret-key-min-32-chars>",
-    "AccessTokenMinutes": 120
-  },
-  "AdminAuth": {
-    "Email": "admin@yourdomain.com",
-    "Password": "<admin-password>"
-  },
-  "Frontend": {
-    "BaseUrl": "https://localhost:7273"
-  },
-  "Email": {
-    "SmtpServer": "smtp.gmail.com",
-    "SmtpPort": "587",
-    "SmtpUser": "your@gmail.com",
-    "SmtpPass": "<gmail-app-password>"
-  },
-  "PaymentInformation": {
-    "AccountHolder": "Your Name",
-    "IBAN": "DE00 0000 0000 0000 0000 00",
-    "BIC": "YOURBICXXX",
-    "Bank": "Your Bank"
-  }
-}
+```bash
+cd OC.LUAC.ApiLayer
+dotnet user-secrets init
+dotnet user-secrets set "Jwt:Key" "<your-secret-key-min-32-chars>"
+dotnet user-secrets set "AdminAuth:Email" "admin@yourdomain.com"
+dotnet user-secrets set "AdminAuth:Password" "<admin-password>"
+dotnet user-secrets set "Email:SmtpUser" "your@gmail.com"
+dotnet user-secrets set "Email:SmtpPass" "<gmail-app-password>"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\\mssqllocaldb;Database=OCLUACShopDB;Trusted_Connection=True;"
 ```
-
-> **Never commit real secrets.** Use [.NET User Secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) or environment variables for production credentials.
 
 ### Apply database migrations
 
@@ -181,9 +157,9 @@ dotnet ef database update --project ../OC.LUAC.DataLayer
 
 ---
 
-## Running the App
+## ▶️ Running the App
 
-Open two terminals (API and UI must run simultaneously):
+Open two terminals — the API and UI must run simultaneously:
 
 ```bash
 # Terminal 1 — API
@@ -195,22 +171,22 @@ cd OC.LUAC.UiLayer
 dotnet run
 ```
 
-Then open `https://localhost:7273` in your browser.
+Then open `https://localhost:7273` in your browser. 🌐
 
-Swagger UI is available at `https://localhost:7299/swagger` (or whichever port the API binds to).
+> Swagger UI is available at `https://localhost:7299/swagger`
 
 ---
 
-## Deployment
+## ☁️ Deployment
 
 Both projects are configured for **Azure App Service (Windows)**:
 
-| App Service | Default name |
+| | Name |
 |---|---|
-| API | `luac-api-win` |
-| UI | `luac-ui-win` |
-| Resource group | `luac-shop-rg` |
-| Region | Germany West Central |
+| 🖥️ API App Service | `luac-api-win` |
+| 🎨 UI App Service | `luac-ui-win` |
+| 📦 Resource group | `luac-shop-rg` |
+| 🌍 Region | Germany West Central |
 
 ARM templates for each service are in:
 ```
@@ -222,25 +198,25 @@ For production, set the connection string to the Azure SQL instance and update `
 
 ---
 
-## API Reference
+## 📡 API Reference
 
 The API is documented via Swagger. Key endpoint groups:
 
 | Group | Base path | Auth |
 |---|---|---|
-| Products | `GET /api/products` | Public |
-| Product detail | `GET /api/products/{id}` | Public |
-| Orders | `POST /api/orders` | Customer (cookie) |
-| Admin orders | `GET /api/orders/admin/open` | Admin (JWT) |
-| Shipping quote | `GET /api/shipping-zones/quote` | Public |
-| Shipping zones | `GET/POST/PUT/DELETE /api/shipping-zones` | Admin (JWT) |
-| Vouchers | `/api/vouchers` | Admin (JWT) |
-| Customers | `/api/customers` | Mixed |
+| 📦 Products | `GET /api/products` | Public |
+| 🔍 Product detail | `GET /api/products/{id}` | Public |
+| 🛒 Orders | `POST /api/orders` | Customer (cookie) |
+| 🔧 Admin orders | `GET /api/orders/admin/open` | Admin (JWT) |
+| 🚚 Shipping quote | `GET /api/shipping-zones/quote` | Public |
+| 🗺️ Shipping zones | `GET/POST/PUT/DELETE /api/shipping-zones` | Admin (JWT) |
+| 🎟️ Vouchers | `/api/vouchers` | Admin (JWT) |
+| 👥 Customers | `/api/customers` | Mixed |
 
-All admin endpoints require `Authorization: Bearer <token>` obtained from the admin login endpoint.
+> All admin endpoints require `Authorization: Bearer <token>` obtained from the admin login endpoint.
 
 ---
 
-## License
+## 📜 License
 
 Private / proprietary. All rights reserved.
